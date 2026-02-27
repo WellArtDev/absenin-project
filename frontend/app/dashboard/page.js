@@ -3,7 +3,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
-// Utility components
+// ============================================
+// UTILITY COMPONENTS
+// ============================================
 const Badge = ({ status }) => {
   const c = { HADIR: 'bg-green-100 text-green-700', TERLAMBAT: 'bg-yellow-100 text-yellow-700', IZIN: 'bg-purple-100 text-purple-700', SAKIT: 'bg-orange-100 text-orange-700', ALPHA: 'bg-red-100 text-red-700' };
   return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c[status] || 'bg-gray-100 text-gray-700'}`}>{status}</span>;
@@ -12,14 +14,67 @@ const OtBadge = ({ status }) => {
   const c = { pending: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', completed: 'bg-blue-100 text-blue-700' };
   return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c[status] || 'bg-gray-100'}`}>{status}</span>;
 };
-const Av = ({ name, color = 'bg-brand-100 text-brand-600' }) => <div className={`w-9 h-9 ${color} rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0`}>{(name || '?').charAt(0).toUpperCase()}</div>;
-const Spinner = () => <div className="py-16 text-center"><div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>;
+const Av = ({ name, color = 'bg-brand-100 text-brand-600' }) => (
+  <div className={`w-9 h-9 ${color} rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0`}>
+    {(name || '?').charAt(0).toUpperCase()}
+  </div>
+);
+const Spinner = () => (
+  <div className="py-16 text-center">
+    <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
+    <p className="text-sm text-gray-400 mt-3">Memuat...</p>
+  </div>
+);
 const mons = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+// ============================================
+// ✅ FIX #1: Safe accessor helper
+// Normalizes analytics data so every nested
+// property always exists with a default value.
+// This prevents ALL "Cannot read properties
+// of undefined" errors in the overview tab.
+// ============================================
+const safe = (raw) => {
+  if (!raw) return null;
+  return {
+    totalEmployees: raw.totalEmployees ?? 0,
+    today: {
+      checkedIn:       raw.today?.checkedIn ?? 0,
+      onTime:          raw.today?.onTime ?? 0,
+      late:            raw.today?.late ?? 0,
+      izin:            raw.today?.izin ?? 0,
+      sakit:           raw.today?.sakit ?? 0,
+      checkedOut:      raw.today?.checkedOut ?? 0,
+      notCheckedIn:    raw.today?.notCheckedIn ?? 0,
+      attendanceRate:  raw.today?.attendanceRate ?? 0,
+      withSelfie:      raw.today?.withSelfie ?? 0,
+      withLocation:    raw.today?.withLocation ?? 0,
+      overtimeMinutes: raw.today?.overtimeMinutes ?? 0,
+    },
+    overtime: {
+      total:        raw.overtime?.total ?? 0,
+      autoCount:    raw.overtime?.autoCount ?? 0,
+      manualCount:  raw.overtime?.manualCount ?? 0,
+      pending:      raw.overtime?.pending ?? 0,
+      totalMinutes: raw.overtime?.totalMinutes ?? 0,
+      formatted:    raw.overtime?.formatted ?? '0j 0m',
+    },
+    pendingLeaves:    raw.pendingLeaves ?? 0,
+    weekChart:        raw.weekChart ?? [],
+    recentAttendance: raw.recentAttendance ?? [],
+    notCheckedIn:     raw.notCheckedIn ?? [],
+    monthly:          raw.monthly ?? {},
+    mapData:          raw.mapData ?? [],
+  };
+};
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
+  const [rawAnalytics, setRawAnalytics] = useState(null); // ✅ FIX #2: renamed
   const [employees, setEmployees] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -27,13 +82,17 @@ export default function DashboardPage() {
   const [tab, setTab] = useState('overview');
   const [subTab, setSubTab] = useState('list');
   const [search, setSearch] = useState('');
-  
+
+  // ✅ FIX #3: analytics is always safe
+  const analytics = useMemo(() => safe(rawAnalytics), [rawAnalytics]);
+
   // Forms
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState(null);
   const [viewId, setViewId] = useState(null);
-  const [ef, setEf] = useState({ name: '', phone_number: '', position: '', department: '', employee_code: '', email: '', division_id: '', position_id: '', employment_status: 'tetap', start_date: '', base_salary: '', ktp_number: '', npwp_number: '', birth_date: '', birth_place: '', gender: '', address: '', emergency_contact: '', emergency_phone: '', leave_balance: 12, radius_lock_enabled: true });
-  const resetEf = () => setEf({ name: '', phone_number: '', position: '', department: '', employee_code: '', email: '', division_id: '', position_id: '', employment_status: 'tetap', start_date: '', base_salary: '', ktp_number: '', npwp_number: '', birth_date: '', birth_place: '', gender: '', address: '', emergency_contact: '', emergency_phone: '', leave_balance: 12, radius_lock_enabled: true });
+  const emptyEf = { name: '', phone_number: '', position: '', department: '', employee_code: '', email: '', division_id: '', position_id: '', employment_status: 'tetap', start_date: '', base_salary: '', ktp_number: '', npwp_number: '', birth_date: '', birth_place: '', gender: '', address: '', emergency_contact: '', emergency_phone: '', leave_balance: 12, radius_lock_enabled: true };
+  const [ef, setEf] = useState({ ...emptyEf });
+  const resetEf = () => setEf({ ...emptyEf });
   const [eLoading, setELoading] = useState(false);
   const [eErr, setEErr] = useState('');
   const [eOk, setEOk] = useState('');
@@ -64,55 +123,69 @@ export default function DashboardPage() {
   const [banks, setBanks] = useState([]);
   const [myPayments, setMyPayments] = useState([]);
 
+  // ============================================
+  // DATA LOADING
+  // ============================================
   useEffect(() => {
     if (!api.getToken()) { router.push('/login'); return; }
     loadData();
   }, []);
 
+  // ✅ FIX #4: Each API call wrapped in .catch() so one failure doesn't kill all
   const loadData = async () => {
     try {
       setLoading(true);
       const [me, an, emp, div, pos] = await Promise.all([
-        api.getMe(), api.getAnalytics(), api.getEmployees(), api.getDivisions(), api.getPositions()
+        api.getMe(),
+        api.getAnalytics().catch(() => ({ data: null })),
+        api.getEmployees().catch(() => ({ data: [] })),
+        api.getDivisions().catch(() => ({ data: [] })),
+        api.getPositions().catch(() => ({ data: [] })),
       ]);
       setUser(me.data);
-      // Redirect superadmin
-      if (me.data.role === 'superadmin') { router.push('/superadmin'); return; }
-      setAnalytics(an.data);
+      if (me.data?.role === 'superadmin') { router.push('/superadmin'); return; }
+      setRawAnalytics(an.data ?? null);     // ✅ FIX #5
       setEmployees(emp.data || []);
       setDivisions(div.data || []);
       setPositions(pos.data || []);
     } catch (e) {
-      if (e.message.includes('Token') || e.message.includes('Sesi')) router.push('/login');
+      console.error('loadData error:', e);
+      if (e.message?.includes('Token') || e.message?.includes('Sesi')) router.push('/login');
     } finally { setLoading(false); }
+  };
+
+  // Helper to reload analytics safely
+  const reloadAnalytics = async () => {
+    try {
+      const an = await api.getAnalytics();
+      setRawAnalytics(an.data ?? null);
+    } catch { setRawAnalytics(null); }
   };
 
   // Filtered employees
   const filteredEmployees = useMemo(() => {
     if (!search.trim()) return employees;
     const s = search.toLowerCase();
-    return employees.filter(e => 
-      (e.name || '').toLowerCase().includes(s) || 
+    return employees.filter(e =>
+      (e.name || '').toLowerCase().includes(s) ||
       (e.employee_code || '').toLowerCase().includes(s) ||
       (e.phone_number || '').includes(s) ||
       (e.email || '').toLowerCase().includes(s)
     );
   }, [employees, search]);
 
-  // Employee CRUD
+  // ============================================
+  // EMPLOYEE CRUD
+  // ============================================
   const addEmp = async (e) => {
     e.preventDefault(); setELoading(true); setEErr(''); setEOk('');
     try {
-      if (editId) {
-        await api.updateEmployee(editId, ef);
-        setEOk('Karyawan diperbarui!');
-      } else {
-        await api.createEmployee(ef);
-        setEOk('Karyawan ditambahkan!');
-      }
+      if (editId) { await api.updateEmployee(editId, ef); setEOk('Karyawan diperbarui!'); }
+      else { await api.createEmployee(ef); setEOk('Karyawan ditambahkan!'); }
       resetEf(); setEditId(null);
-      const [an, emp] = await Promise.all([api.getAnalytics(), api.getEmployees()]);
-      setAnalytics(an.data); setEmployees(emp.data || []);
+      const emp = await api.getEmployees().catch(() => ({ data: [] }));
+      setEmployees(emp.data || []);
+      await reloadAnalytics();
       setTimeout(() => { setShowAdd(false); setEOk(''); }, 1500);
     } catch (err) { setEErr(err.message); } finally { setELoading(false); }
   };
@@ -133,43 +206,61 @@ export default function DashboardPage() {
   };
 
   const viewEmployee = async (id) => {
-    try {
-      const r = await api.getEmployee(id);
-      setViewEmp(r.data);
-      setViewId(id);
-    } catch (e) { alert(e.message); }
+    try { const r = await api.getEmployee(id); setViewEmp(r.data); setViewId(id); }
+    catch (e) { alert(e.message); }
   };
 
   const delEmp = async (id, name) => {
     if (!confirm(`Hapus ${name}?`)) return;
     try {
       await api.deleteEmployee(id);
-      const [an, emp] = await Promise.all([api.getAnalytics(), api.getEmployees()]);
-      setAnalytics(an.data); setEmployees(emp.data || []);
+      const emp = await api.getEmployees().catch(() => ({ data: [] }));
+      setEmployees(emp.data || []);
+      await reloadAnalytics();
     } catch (e) { alert(e.message); }
   };
 
-  // Data loaders
-  const loadAtt = async () => { try { setAttLoading(true); const d = new Date().toISOString().split('T')[0]; const r = await api.getAttendance({ start_date: d, end_date: d }); setAttData(r.data || []); } catch (e) { } finally { setAttLoading(false); } };
-  const loadReport = async () => { try { const r = await api.getMonthlyReport(rMonth, rYear); setMReport(r.data || []); } catch (e) { } };
-  const loadOT = async () => { try { setOtLoading(true); const [ot, s] = await Promise.all([api.getOvertime({ start_date: `${rYear}-${String(rMonth).padStart(2, '0')}-01` }), api.getOvertimeSummary(rMonth, rYear)]); setOtData(ot.data || []); setOtSummary(s.data || []); } catch (e) { } finally { setOtLoading(false); } };
-  const loadLeaves = async () => { try { setLeavesLoading(true); const r = await api.getLeaves(); setLeavesData(r.data || []); } catch (e) { } finally { setLeavesLoading(false); } };
+  // ============================================
+  // TAB DATA LOADERS
+  // ============================================
+  const loadAtt = async () => {
+    try { setAttLoading(true); const d = new Date().toISOString().split('T')[0]; const r = await api.getAttendance({ start_date: d, end_date: d }); setAttData(r.data || []); }
+    catch {} finally { setAttLoading(false); }
+  };
+  const loadReport = async () => {
+    try { const r = await api.getMonthlyReport(rMonth, rYear); setMReport(r.data || []); } catch {}
+  };
+  const loadOT = async () => {
+    try { setOtLoading(true); const [ot, s] = await Promise.all([api.getOvertime({ start_date: `${rYear}-${String(rMonth).padStart(2, '0')}-01` }), api.getOvertimeSummary(rMonth, rYear)]); setOtData(ot.data || []); setOtSummary(s.data || []); }
+    catch {} finally { setOtLoading(false); }
+  };
+  const loadLeaves = async () => {
+    try { setLeavesLoading(true); const r = await api.getLeaves(); setLeavesData(r.data || []); }
+    catch {} finally { setLeavesLoading(false); }
+  };
   const loadSettings = async () => {
-    try { setSettingsLoading(true); const r = await api.getSettings(); setSettings(r.data); setSettingsForm(r.data || {}); } catch (e) { } finally { setSettingsLoading(false); }
+    try { setSettingsLoading(true); const r = await api.getSettings(); setSettings(r.data); setSettingsForm(r.data || {}); }
+    catch {} finally { setSettingsLoading(false); }
   };
   const loadPayment = async () => {
-    try { const [pl, bk, my] = await Promise.all([api.getPlans(), api.getBanks(), api.getMyPayments()]); setPlans(pl.data || []); setBanks(bk.data || []); setMyPayments(my.data || []); } catch (e) { }
+    try {
+      const [pl, bk, my] = await Promise.all([
+        api.getPlans().catch(() => ({ data: [] })),
+        api.getBanks().catch(() => ({ data: [] })),
+        api.getMyPayments().catch(() => ({ data: [] })),
+      ]);
+      setPlans(pl.data || []); setBanks(bk.data || []); setMyPayments(my.data || []);
+    } catch {}
   };
 
   const saveSettings = async () => {
-    try {
-      setSettingsSaving(true);
-      await api.updateSettings(settingsForm);
-      alert('✅ Pengaturan disimpan!');
-      loadSettings();
-    } catch (e) { alert('❌ ' + e.message); } finally { setSettingsSaving(false); }
+    try { setSettingsSaving(true); await api.updateSettings(settingsForm); alert('✅ Pengaturan disimpan!'); loadSettings(); }
+    catch (e) { alert('❌ ' + e.message); } finally { setSettingsSaving(false); }
   };
 
+  // ============================================
+  // ACTION HANDLERS
+  // ============================================
   const approveOT = async (id) => { try { await api.approveOvertime(id); loadOT(); } catch (e) { alert(e.message); } };
   const rejectOT = async (id) => { const n = prompt('Alasan:'); if (n === null) return; try { await api.rejectOvertime(id, n); loadOT(); } catch (e) { alert(e.message); } };
   const approveLeave = async (id) => { try { await api.approveLeave(id); loadLeaves(); } catch (e) { alert(e.message); } };
@@ -190,6 +281,9 @@ export default function DashboardPage() {
   };
   const delPos = async (id) => { if (!confirm('Hapus jabatan?')) return; try { await api.deletePosition(id); const r = await api.getPositions(); setPositions(r.data || []); } catch (e) { alert(e.message); } };
 
+  // ============================================
+  // TAB EFFECTS
+  // ============================================
   useEffect(() => { if (tab === 'attendance') loadAtt(); }, [tab]);
   useEffect(() => { if (tab === 'reports') loadReport(); }, [tab, rMonth, rYear]);
   useEffect(() => { if (tab === 'overtime') loadOT(); }, [tab, rMonth, rYear]);
@@ -197,8 +291,14 @@ export default function DashboardPage() {
   useEffect(() => { if (tab === 'settings') loadSettings(); }, [tab]);
   useEffect(() => { if (tab === 'payment') loadPayment(); }, [tab]);
 
+  // ============================================
+  // LOADING SCREEN
+  // ============================================
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Spinner /></div>;
 
+  // ============================================
+  // CONSTANTS
+  // ============================================
   const tabs = [
     { id: 'overview', l: '📊 Overview' }, { id: 'employees', l: '👥 Karyawan' },
     { id: 'attendance', l: '📅 Absensi' }, { id: 'overtime', l: '🕐 Lembur' },
@@ -225,6 +325,9 @@ export default function DashboardPage() {
       <select {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm">{children}</select></div>
   );
 
+  // ============================================
+  // RENDER
+  // ============================================
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -252,83 +355,101 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
         {/* ======== OVERVIEW ======== */}
-        {tab === 'overview' && analytics && (
+        {tab === 'overview' && (
           <div className="space-y-6 animate-fade-in">
             <div><h1 className="text-2xl font-bold">Selamat {gr}, {user?.name} 👋</h1><p className="text-gray-600 mt-1">{todayStr}</p></div>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              {[
-                { l: 'Karyawan', v: analytics.totalEmployees, i: '👥', bg: 'bg-blue-50', tx: 'text-blue-600', bd: 'border-blue-100' },
-                { l: 'Hadir', v: analytics.today.checkedIn, i: '✅', bg: 'bg-green-50', tx: 'text-green-600', bd: 'border-green-100', sub: `${analytics.today.attendanceRate}%` },
-                { l: 'Terlambat', v: analytics.today.late, i: '⏰', bg: 'bg-yellow-50', tx: 'text-yellow-600', bd: 'border-yellow-100' },
-                { l: 'Belum Hadir', v: analytics.today.notCheckedIn, i: '❌', bg: 'bg-red-50', tx: 'text-red-600', bd: 'border-red-100' },
-                { l: 'Lembur', v: analytics.overtime?.formatted || '0j', i: '🕐', bg: 'bg-indigo-50', tx: 'text-indigo-600', bd: 'border-indigo-100', sub: `${analytics.overtime?.total || 0} org` },
-              ].map((s, i) => (
-                <div key={i} className={`stat-card ${s.bg} border ${s.bd} rounded-2xl p-5`}>
-                  <span className="text-2xl">{s.i}</span><p className={`text-3xl font-bold ${s.tx} mt-2`}>{s.v}</p>
-                  <p className="text-sm text-gray-600 mt-1">{s.l}</p>{s.sub && <p className="text-xs text-gray-500">{s.sub}</p>}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-              {[
-                { l: 'Izin', v: analytics.today.izin, i: '📝', bg: 'bg-purple-50', bd: 'border-purple-100' },
-                { l: 'Sakit', v: analytics.today.sakit, i: '🤒', bg: 'bg-orange-50', bd: 'border-orange-100' },
-                { l: 'Selfie', v: analytics.today.withSelfie || 0, i: '📸', bg: 'bg-pink-50', bd: 'border-pink-100' },
-                { l: 'GPS', v: analytics.today.withLocation || 0, i: '📍', bg: 'bg-teal-50', bd: 'border-teal-100' },
-                { l: 'Pending Cuti', v: analytics.pendingLeaves || 0, i: '🏖️', bg: 'bg-cyan-50', bd: 'border-cyan-100' },
-              ].map((s, i) => (
-                <div key={i} className={`${s.bg} border ${s.bd} rounded-xl p-4 text-center`}>
-                  <span className="text-xl">{s.i}</span><p className="text-2xl font-bold mt-1">{s.v}</p><p className="text-xs text-gray-600">{s.l}</p>
-                </div>
-              ))}
-            </div>
-            {analytics.overtime?.pending > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-center gap-4">
-                <span className="text-3xl">⏳</span>
-                <div className="flex-1"><p className="font-semibold text-yellow-800">{analytics.overtime.pending} pengajuan lembur menunggu</p></div>
-                <button onClick={() => setTab('overtime')} className="bg-yellow-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-yellow-600">Review</button>
+
+            {/* ✅ FIX #6: Show retry UI when analytics is null instead of blank page */}
+            {!analytics ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                <p className="text-4xl mb-3">📊</p>
+                <p className="text-gray-600 font-medium">Gagal memuat data analytics</p>
+                <p className="text-gray-400 text-sm mt-1">Pastikan backend berjalan di port 3001</p>
+                <button onClick={loadData} className="mt-4 bg-brand-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600">🔄 Coba Lagi</button>
               </div>
+            ) : (
+              <>
+                {/* ✅ FIX #7: All analytics.today.xxx are now safe via the safe() helper */}
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                  {[
+                    { l: 'Karyawan', v: analytics.totalEmployees, i: '👥', bg: 'bg-blue-50', tx: 'text-blue-600', bd: 'border-blue-100' },
+                    { l: 'Hadir', v: analytics.today.checkedIn, i: '✅', bg: 'bg-green-50', tx: 'text-green-600', bd: 'border-green-100', sub: `${analytics.today.attendanceRate}%` },
+                    { l: 'Terlambat', v: analytics.today.late, i: '⏰', bg: 'bg-yellow-50', tx: 'text-yellow-600', bd: 'border-yellow-100' },
+                    { l: 'Belum Hadir', v: analytics.today.notCheckedIn, i: '❌', bg: 'bg-red-50', tx: 'text-red-600', bd: 'border-red-100' },
+                    { l: 'Lembur', v: analytics.overtime.formatted, i: '🕐', bg: 'bg-indigo-50', tx: 'text-indigo-600', bd: 'border-indigo-100', sub: `${analytics.overtime.total} org` },
+                  ].map((s, i) => (
+                    <div key={i} className={`stat-card ${s.bg} border ${s.bd} rounded-2xl p-5`}>
+                      <span className="text-2xl">{s.i}</span><p className={`text-3xl font-bold ${s.tx} mt-2`}>{s.v}</p>
+                      <p className="text-sm text-gray-600 mt-1">{s.l}</p>{s.sub && <p className="text-xs text-gray-500">{s.sub}</p>}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                  {[
+                    { l: 'Izin', v: analytics.today.izin, i: '📝', bg: 'bg-purple-50', bd: 'border-purple-100' },
+                    { l: 'Sakit', v: analytics.today.sakit, i: '🤒', bg: 'bg-orange-50', bd: 'border-orange-100' },
+                    { l: 'Selfie', v: analytics.today.withSelfie, i: '📸', bg: 'bg-pink-50', bd: 'border-pink-100' },
+                    { l: 'GPS', v: analytics.today.withLocation, i: '📍', bg: 'bg-teal-50', bd: 'border-teal-100' },
+                    { l: 'Pending Cuti', v: analytics.pendingLeaves, i: '🏖️', bg: 'bg-cyan-50', bd: 'border-cyan-100' },
+                  ].map((s, i) => (
+                    <div key={i} className={`${s.bg} border ${s.bd} rounded-xl p-4 text-center`}>
+                      <span className="text-xl">{s.i}</span><p className="text-2xl font-bold mt-1">{s.v}</p><p className="text-xs text-gray-600">{s.l}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {analytics.overtime.pending > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-center gap-4">
+                    <span className="text-3xl">⏳</span>
+                    <div className="flex-1"><p className="font-semibold text-yellow-800">{analytics.overtime.pending} pengajuan lembur menunggu</p></div>
+                    <button onClick={() => setTab('overtime')} className="bg-yellow-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-yellow-600">Review</button>
+                  </div>
+                )}
+
+                <div className="grid lg:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b"><h3 className="font-semibold">✅ Absensi Terbaru</h3></div>
+                    <div className="divide-y divide-gray-50">{analytics.recentAttendance.length > 0 ? analytics.recentAttendance.map((a, i) => (
+                      <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+                        <div className="flex items-center gap-3"><Av name={a.employee_name} /><div><p className="text-sm font-medium">{a.employee_name}{a.selfie_checkin_url && ' 📸'}{a.location_name && ' 📍'}</p><p className="text-xs text-gray-500">{a.division_name || a.department || '-'}</p></div></div>
+                        <div className="text-right"><p className="text-sm font-medium">{a.check_in ? new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</p><Badge status={a.status} /></div>
+                      </div>
+                    )) : <div className="px-6 py-8 text-center text-gray-500">📭 Belum ada</div>}</div>
+                  </div>
+                  <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b"><h3 className="font-semibold">❌ Belum Check-in</h3></div>
+                    <div className="divide-y divide-gray-50">{analytics.notCheckedIn.length > 0 ? analytics.notCheckedIn.map((e, i) => (
+                      <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+                        <div className="flex items-center gap-3"><Av name={e.name} color="bg-red-100 text-red-600" /><div><p className="text-sm font-medium">{e.name}</p><p className="text-xs text-gray-500">{e.division_name || e.department || '-'}</p></div></div>
+                        <span className="text-xs text-gray-400 font-mono">{e.phone_number}</span>
+                      </div>
+                    )) : <div className="px-6 py-8 text-center text-gray-500">🎉 Semua sudah check-in!</div>}</div>
+                  </div>
+                </div>
+
+                {/* WA Commands */}
+                <div className="bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-6 text-white">
+                  <h3 className="text-lg font-bold mb-3">💬 Perintah WhatsApp v3.0</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="bg-white/10 rounded-xl p-4 space-y-2 text-sm">
+                      <p className="font-bold text-brand-100">📋 Absensi:</p>
+                      <p>📸 Foto + <b>HADIR</b> → Check-in</p>
+                      <p>📸 Foto + <b>PULANG</b> → Check-out</p>
+                      <p>📊 <b>STATUS</b> / 📝 <b>IZIN</b> / 🤒 <b>SAKIT</b></p>
+                    </div>
+                    <div className="bg-white/10 rounded-xl p-4 space-y-2 text-sm">
+                      <p className="font-bold text-brand-100">🕐 Lembur:</p>
+                      <p>⏰ <b>LEMBUR</b> [alasan] → Ajukan</p>
+                      <p>✅ <b>SELESAI LEMBUR</b> → Akhiri</p>
+                      <p>📊 <b>REKAP</b> → Rekap bulan ini</p>
+                      <p className="text-brand-200 text-xs mt-2">💡 Pulang &gt; jam kerja = auto lembur</p>
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
-            <div className="grid lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b"><h3 className="font-semibold">✅ Absensi Terbaru</h3></div>
-                <div className="divide-y divide-gray-50">{analytics.recentAttendance?.length > 0 ? analytics.recentAttendance.map((a, i) => (
-                  <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
-                    <div className="flex items-center gap-3"><Av name={a.employee_name} /><div><p className="text-sm font-medium">{a.employee_name}{a.selfie_checkin_url && ' 📸'}{a.location_name && ' 📍'}</p><p className="text-xs text-gray-500">{a.division_name || a.department || '-'}</p></div></div>
-                    <div className="text-right"><p className="text-sm font-medium">{a.check_in ? new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</p><Badge status={a.status} /></div>
-                  </div>
-                )) : <div className="px-6 py-8 text-center text-gray-500">📭 Belum ada</div>}</div>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b"><h3 className="font-semibold">❌ Belum Check-in</h3></div>
-                <div className="divide-y divide-gray-50">{analytics.notCheckedIn?.length > 0 ? analytics.notCheckedIn.map((e, i) => (
-                  <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
-                    <div className="flex items-center gap-3"><Av name={e.name} color="bg-red-100 text-red-600" /><div><p className="text-sm font-medium">{e.name}</p><p className="text-xs text-gray-500">{e.division_name || e.department || '-'}</p></div></div>
-                    <span className="text-xs text-gray-400 font-mono">{e.phone_number}</span>
-                  </div>
-                )) : <div className="px-6 py-8 text-center text-gray-500">🎉 Semua sudah check-in!</div>}</div>
-              </div>
-            </div>
-            {/* WA Commands */}
-            <div className="bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-6 text-white">
-              <h3 className="text-lg font-bold mb-3">💬 Perintah WhatsApp v3.0</h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="bg-white/10 rounded-xl p-4 space-y-2 text-sm">
-                  <p className="font-bold text-brand-100">📋 Absensi:</p>
-                  <p>📸 Foto + <b>HADIR</b> → Check-in</p>
-                  <p>📸 Foto + <b>PULANG</b> → Check-out</p>
-                  <p>📊 <b>STATUS</b> / 📝 <b>IZIN</b> / 🤒 <b>SAKIT</b></p>
-                </div>
-                <div className="bg-white/10 rounded-xl p-4 space-y-2 text-sm">
-                  <p className="font-bold text-brand-100">🕐 Lembur:</p>
-                  <p>⏰ <b>LEMBUR</b> [alasan] → Ajukan</p>
-                  <p>✅ <b>SELESAI LEMBUR</b> → Akhiri</p>
-                  <p>📊 <b>REKAP</b> → Rekap bulan ini</p>
-                  <p className="text-brand-200 text-xs mt-2">💡 Pulang &gt; jam kerja = auto lembur</p>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -600,7 +721,6 @@ export default function DashboardPage() {
             </div>
             {otLoading ? <Spinner /> : (
               <>
-                {/* Summary */}
                 {otSummary.filter(e => (parseInt(e.overtime_days) || 0) > 0).length > 0 && (
                   <div className="bg-white rounded-2xl border overflow-hidden">
                     <div className="px-6 py-4 border-b"><h3 className="font-semibold">📊 Ringkasan — {mons[rMonth]} {rYear}</h3></div>
@@ -623,7 +743,6 @@ export default function DashboardPage() {
                     ))}</tbody></table></div>
                   </div>
                 )}
-                {/* Detail */}
                 <div className="bg-white rounded-2xl border overflow-hidden">
                   <div className="px-6 py-4 border-b"><h3 className="font-semibold">📋 Detail Lembur</h3></div>
                   {otData.length > 0 ? (
@@ -738,7 +857,6 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold">⚙️ Pengaturan</h2>
             {settingsLoading ? <Spinner /> : settings && (
               <div className="space-y-6">
-                {/* Company Info */}
                 <div className="bg-white rounded-2xl border p-6">
                   <h3 className="text-lg font-semibold mb-4">🏢 Informasi Perusahaan</h3>
                   <div className="grid md:grid-cols-2 gap-4">
@@ -749,8 +867,6 @@ export default function DashboardPage() {
                     <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label><textarea value={settingsForm.company_address || ''} onChange={e => setSettingsForm({ ...settingsForm, company_address: e.target.value })} rows={2} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
                   </div>
                 </div>
-
-                {/* Work Hours */}
                 <div className="bg-white rounded-2xl border p-6">
                   <h3 className="text-lg font-semibold mb-4">⏰ Jam Kerja</h3>
                   <div className="grid md:grid-cols-3 gap-4">
@@ -764,8 +880,6 @@ export default function DashboardPage() {
                     <label className="flex items-center gap-2"><input type="checkbox" checked={settingsForm.overtime_enabled || false} onChange={e => setSettingsForm({ ...settingsForm, overtime_enabled: e.target.checked })} className="w-4 h-4 text-brand-500 rounded" /><span className="text-sm">🕐 Lembur Aktif</span></label>
                   </div>
                 </div>
-
-                {/* Office Location & Radius */}
                 <div className="bg-white rounded-2xl border p-6">
                   <h3 className="text-lg font-semibold mb-4">📍 Lokasi Kantor & Radius</h3>
                   <div className="grid md:grid-cols-3 gap-4 mb-4">
@@ -785,8 +899,6 @@ export default function DashboardPage() {
                   )}
                   <p className="text-xs text-gray-500 mt-2">💡 Tips: Buka Google Maps → klik lokasi kantor → salin koordinat latitude & longitude</p>
                 </div>
-
-                {/* WhatsApp / Fonnte Config */}
                 <div className="bg-white rounded-2xl border p-6">
                   <h3 className="text-lg font-semibold mb-4">💬 WhatsApp (Fonnte) Config</h3>
                   <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
@@ -806,7 +918,6 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500 mt-2">Salin URL ini dan paste di pengaturan Webhook Fonnte Anda.</p>
                   </div>
                 </div>
-
                 <button onClick={saveSettings} disabled={settingsSaving} className="bg-brand-500 text-white px-8 py-3 rounded-xl font-semibold hover:bg-brand-600 disabled:opacity-50 shadow-sm">
                   {settingsSaving ? '⏳ Menyimpan...' : '💾 Simpan Semua Pengaturan'}
                 </button>
@@ -822,9 +933,8 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold">💰 Paket & Pembayaran</h2>
               <p className="text-gray-600 text-sm mt-1">Paket saat ini: <span className="font-bold text-brand-600 capitalize">{user?.plan || 'free'}</span></p>
             </div>
-            {/* Plans */}
             <div className="grid md:grid-cols-3 gap-6">
-              {plans.map((plan, i) => (
+              {plans.map((plan) => (
                 <div key={plan.id} className={`rounded-2xl p-6 border-2 ${user?.plan === plan.slug ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white'}`}>
                   {user?.plan === plan.slug && <div className="text-xs font-bold text-brand-600 mb-2">✅ PAKET AKTIF</div>}
                   <h3 className="text-xl font-bold">{plan.name}</h3>
@@ -841,8 +951,6 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-
-            {/* Bank Accounts */}
             {banks.length > 0 && (
               <div className="bg-white rounded-2xl border p-6">
                 <h3 className="text-lg font-semibold mb-4">🏦 Transfer ke Rekening</h3>
@@ -857,8 +965,6 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
-            {/* My Payments */}
             {myPayments.length > 0 && (
               <div className="bg-white rounded-2xl border overflow-hidden">
                 <div className="px-6 py-4 border-b"><h3 className="font-semibold">📋 Riwayat Pembayaran</h3></div>
