@@ -1,0 +1,893 @@
+'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+
+// Utility components
+const Badge = ({ status }) => {
+  const c = { HADIR: 'bg-green-100 text-green-700', TERLAMBAT: 'bg-yellow-100 text-yellow-700', IZIN: 'bg-purple-100 text-purple-700', SAKIT: 'bg-orange-100 text-orange-700', ALPHA: 'bg-red-100 text-red-700' };
+  return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c[status] || 'bg-gray-100 text-gray-700'}`}>{status}</span>;
+};
+const OtBadge = ({ status }) => {
+  const c = { pending: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', completed: 'bg-blue-100 text-blue-700' };
+  return <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c[status] || 'bg-gray-100'}`}>{status}</span>;
+};
+const Av = ({ name, color = 'bg-brand-100 text-brand-600' }) => <div className={`w-9 h-9 ${color} rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0`}>{(name || '?').charAt(0).toUpperCase()}</div>;
+const Spinner = () => <div className="py-16 text-center"><div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>;
+const mons = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [divisions, setDivisions] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('overview');
+  const [subTab, setSubTab] = useState('list');
+  const [search, setSearch] = useState('');
+  
+  // Forms
+  const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [viewId, setViewId] = useState(null);
+  const [ef, setEf] = useState({ name: '', phone_number: '', position: '', department: '', employee_code: '', email: '', division_id: '', position_id: '', employment_status: 'tetap', start_date: '', base_salary: '', ktp_number: '', npwp_number: '', birth_date: '', birth_place: '', gender: '', address: '', emergency_contact: '', emergency_phone: '', leave_balance: 12, radius_lock_enabled: true });
+  const resetEf = () => setEf({ name: '', phone_number: '', position: '', department: '', employee_code: '', email: '', division_id: '', position_id: '', employment_status: 'tetap', start_date: '', base_salary: '', ktp_number: '', npwp_number: '', birth_date: '', birth_place: '', gender: '', address: '', emergency_contact: '', emergency_phone: '', leave_balance: 12, radius_lock_enabled: true });
+  const [eLoading, setELoading] = useState(false);
+  const [eErr, setEErr] = useState('');
+  const [eOk, setEOk] = useState('');
+  const [viewEmp, setViewEmp] = useState(null);
+
+  // Data states
+  const [attData, setAttData] = useState([]);
+  const [attLoading, setAttLoading] = useState(false);
+  const [rMonth, setRMonth] = useState(new Date().getMonth() + 1);
+  const [rYear, setRYear] = useState(new Date().getFullYear());
+  const [mReport, setMReport] = useState([]);
+  const [otData, setOtData] = useState([]);
+  const [otSummary, setOtSummary] = useState([]);
+  const [otLoading, setOtLoading] = useState(false);
+  const [leavesData, setLeavesData] = useState([]);
+  const [leavesLoading, setLeavesLoading] = useState(false);
+  const [settings, setSettings] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({});
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
+  // Division/Position forms
+  const [divForm, setDivForm] = useState({ name: '', description: '' });
+  const [posForm, setPosForm] = useState({ name: '', division_id: '', description: '', base_salary: '' });
+
+  // Payment
+  const [plans, setPlans] = useState([]);
+  const [banks, setBanks] = useState([]);
+  const [myPayments, setMyPayments] = useState([]);
+
+  useEffect(() => {
+    if (!api.getToken()) { router.push('/login'); return; }
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [me, an, emp, div, pos] = await Promise.all([
+        api.getMe(), api.getAnalytics(), api.getEmployees(), api.getDivisions(), api.getPositions()
+      ]);
+      setUser(me.data);
+      // Redirect superadmin
+      if (me.data.role === 'superadmin') { router.push('/superadmin'); return; }
+      setAnalytics(an.data);
+      setEmployees(emp.data || []);
+      setDivisions(div.data || []);
+      setPositions(pos.data || []);
+    } catch (e) {
+      if (e.message.includes('Token') || e.message.includes('Sesi')) router.push('/login');
+    } finally { setLoading(false); }
+  };
+
+  // Filtered employees
+  const filteredEmployees = useMemo(() => {
+    if (!search.trim()) return employees;
+    const s = search.toLowerCase();
+    return employees.filter(e => 
+      (e.name || '').toLowerCase().includes(s) || 
+      (e.employee_code || '').toLowerCase().includes(s) ||
+      (e.phone_number || '').includes(s) ||
+      (e.email || '').toLowerCase().includes(s)
+    );
+  }, [employees, search]);
+
+  // Employee CRUD
+  const addEmp = async (e) => {
+    e.preventDefault(); setELoading(true); setEErr(''); setEOk('');
+    try {
+      if (editId) {
+        await api.updateEmployee(editId, ef);
+        setEOk('Karyawan diperbarui!');
+      } else {
+        await api.createEmployee(ef);
+        setEOk('Karyawan ditambahkan!');
+      }
+      resetEf(); setEditId(null);
+      const [an, emp] = await Promise.all([api.getAnalytics(), api.getEmployees()]);
+      setAnalytics(an.data); setEmployees(emp.data || []);
+      setTimeout(() => { setShowAdd(false); setEOk(''); }, 1500);
+    } catch (err) { setEErr(err.message); } finally { setELoading(false); }
+  };
+
+  const startEdit = (emp) => {
+    setEf({
+      name: emp.name || '', phone_number: emp.phone_number || '', position: emp.position || '',
+      department: emp.department || '', employee_code: emp.employee_code || '', email: emp.email || '',
+      division_id: emp.division_id || '', position_id: emp.position_id || '',
+      employment_status: emp.employment_status || 'tetap', start_date: emp.start_date ? emp.start_date.split('T')[0] : '',
+      base_salary: emp.base_salary || '', ktp_number: emp.ktp_number || '', npwp_number: emp.npwp_number || '',
+      birth_date: emp.birth_date ? emp.birth_date.split('T')[0] : '', birth_place: emp.birth_place || '',
+      gender: emp.gender || '', address: emp.address || '', emergency_contact: emp.emergency_contact || '',
+      emergency_phone: emp.emergency_phone || '', leave_balance: emp.leave_balance || 12,
+      radius_lock_enabled: emp.radius_lock_enabled !== false
+    });
+    setEditId(emp.id); setShowAdd(true); setEErr(''); setEOk('');
+  };
+
+  const viewEmployee = async (id) => {
+    try {
+      const r = await api.getEmployee(id);
+      setViewEmp(r.data);
+      setViewId(id);
+    } catch (e) { alert(e.message); }
+  };
+
+  const delEmp = async (id, name) => {
+    if (!confirm(`Hapus ${name}?`)) return;
+    try {
+      await api.deleteEmployee(id);
+      const [an, emp] = await Promise.all([api.getAnalytics(), api.getEmployees()]);
+      setAnalytics(an.data); setEmployees(emp.data || []);
+    } catch (e) { alert(e.message); }
+  };
+
+  // Data loaders
+  const loadAtt = async () => { try { setAttLoading(true); const d = new Date().toISOString().split('T')[0]; const r = await api.getAttendance({ start_date: d, end_date: d }); setAttData(r.data || []); } catch (e) { } finally { setAttLoading(false); } };
+  const loadReport = async () => { try { const r = await api.getMonthlyReport(rMonth, rYear); setMReport(r.data || []); } catch (e) { } };
+  const loadOT = async () => { try { setOtLoading(true); const [ot, s] = await Promise.all([api.getOvertime({ start_date: `${rYear}-${String(rMonth).padStart(2, '0')}-01` }), api.getOvertimeSummary(rMonth, rYear)]); setOtData(ot.data || []); setOtSummary(s.data || []); } catch (e) { } finally { setOtLoading(false); } };
+  const loadLeaves = async () => { try { setLeavesLoading(true); const r = await api.getLeaves(); setLeavesData(r.data || []); } catch (e) { } finally { setLeavesLoading(false); } };
+  const loadSettings = async () => {
+    try { setSettingsLoading(true); const r = await api.getSettings(); setSettings(r.data); setSettingsForm(r.data || {}); } catch (e) { } finally { setSettingsLoading(false); }
+  };
+  const loadPayment = async () => {
+    try { const [pl, bk, my] = await Promise.all([api.getPlans(), api.getBanks(), api.getMyPayments()]); setPlans(pl.data || []); setBanks(bk.data || []); setMyPayments(my.data || []); } catch (e) { }
+  };
+
+  const saveSettings = async () => {
+    try {
+      setSettingsSaving(true);
+      await api.updateSettings(settingsForm);
+      alert('✅ Pengaturan disimpan!');
+      loadSettings();
+    } catch (e) { alert('❌ ' + e.message); } finally { setSettingsSaving(false); }
+  };
+
+  const approveOT = async (id) => { try { await api.approveOvertime(id); loadOT(); } catch (e) { alert(e.message); } };
+  const rejectOT = async (id) => { const n = prompt('Alasan:'); if (n === null) return; try { await api.rejectOvertime(id, n); loadOT(); } catch (e) { alert(e.message); } };
+  const approveLeave = async (id) => { try { await api.approveLeave(id); loadLeaves(); } catch (e) { alert(e.message); } };
+  const rejectLeave = async (id) => { const n = prompt('Alasan:'); if (n === null) return; try { await api.rejectLeave(id, n); loadLeaves(); } catch (e) { alert(e.message); } };
+  const doExport = async () => { try { const sd = `${rYear}-${String(rMonth).padStart(2, '0')}-01`; const ld = new Date(rYear, rMonth, 0).getDate(); await api.exportCSV(sd, `${rYear}-${String(rMonth).padStart(2, '0')}-${String(ld).padStart(2, '0')}`); } catch (e) { alert(e.message); } };
+
+  // Division CRUD
+  const addDiv = async (e) => {
+    e.preventDefault();
+    try { await api.createDivision(divForm); setDivForm({ name: '', description: '' }); const r = await api.getDivisions(); setDivisions(r.data || []); } catch (err) { alert(err.message); }
+  };
+  const delDiv = async (id) => { if (!confirm('Hapus divisi?')) return; try { await api.deleteDivision(id); const r = await api.getDivisions(); setDivisions(r.data || []); } catch (e) { alert(e.message); } };
+
+  // Position CRUD
+  const addPos = async (e) => {
+    e.preventDefault();
+    try { await api.createPosition(posForm); setPosForm({ name: '', division_id: '', description: '', base_salary: '' }); const r = await api.getPositions(); setPositions(r.data || []); } catch (err) { alert(err.message); }
+  };
+  const delPos = async (id) => { if (!confirm('Hapus jabatan?')) return; try { await api.deletePosition(id); const r = await api.getPositions(); setPositions(r.data || []); } catch (e) { alert(e.message); } };
+
+  useEffect(() => { if (tab === 'attendance') loadAtt(); }, [tab]);
+  useEffect(() => { if (tab === 'reports') loadReport(); }, [tab, rMonth, rYear]);
+  useEffect(() => { if (tab === 'overtime') loadOT(); }, [tab, rMonth, rYear]);
+  useEffect(() => { if (tab === 'leaves') loadLeaves(); }, [tab]);
+  useEffect(() => { if (tab === 'settings') loadSettings(); }, [tab]);
+  useEffect(() => { if (tab === 'payment') loadPayment(); }, [tab]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Spinner /></div>;
+
+  const tabs = [
+    { id: 'overview', l: '📊 Overview' }, { id: 'employees', l: '👥 Karyawan' },
+    { id: 'attendance', l: '📅 Absensi' }, { id: 'overtime', l: '🕐 Lembur' },
+    { id: 'leaves', l: '🏖️ Cuti' }, { id: 'reports', l: '📤 Laporan' },
+    { id: 'settings', l: '⚙️ Pengaturan' }, { id: 'payment', l: '💰 Paket' },
+  ];
+  const gr = new Date().getHours() < 12 ? 'Pagi' : new Date().getHours() < 17 ? 'Siang' : 'Malam';
+  const todayStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const MonthSelect = () => (
+    <div className="flex items-center gap-2">
+      <select value={rMonth} onChange={e => setRMonth(parseInt(e.target.value))} className="px-3 py-2 rounded-xl border border-gray-200 text-sm">{mons.slice(1).map((m, i) => <option key={i} value={i + 1}>{m}</option>)}</select>
+      <select value={rYear} onChange={e => setRYear(parseInt(e.target.value))} className="px-3 py-2 rounded-xl border border-gray-200 text-sm">{[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}</select>
+    </div>
+  );
+
+  const InputField = ({ label, required, ...props }) => (
+    <div><label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && ' *'}</label>
+      <input {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm" /></div>
+  );
+
+  const SelectField = ({ label, children, ...props }) => (
+    <div><label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <select {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 text-sm">{children}</select></div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">A</span></div>
+              <span className="text-lg font-bold hidden sm:inline">Absenin</span>
+              <span className="text-xs text-brand-500 font-medium bg-brand-50 px-2 py-0.5 rounded-full">{user?.plan || 'free'}</span>
+            </div>
+            <div className="hidden xl:flex items-center gap-1">
+              {tabs.map(t => <button key={t.id} onClick={() => { setTab(t.id); setSubTab('list'); }} className={`px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-brand-50 text-brand-600' : 'text-gray-600 hover:bg-gray-100'}`}>{t.l}</button>)}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:block text-right"><p className="text-sm font-medium">{user?.name}</p><p className="text-xs text-gray-500">{user?.company_name}</p></div>
+              <button onClick={() => api.logout()} className="text-sm text-red-500 hover:text-red-600 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50">Keluar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Mobile tabs */}
+      <div className="xl:hidden flex overflow-x-auto border-b bg-white px-2 scrollbar-hide">
+        {tabs.map(t => <button key={t.id} onClick={() => { setTab(t.id); setSubTab('list'); }} className={`px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 ${tab === t.id ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500'}`}>{t.l}</button>)}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* ======== OVERVIEW ======== */}
+        {tab === 'overview' && analytics && (
+          <div className="space-y-6 animate-fade-in">
+            <div><h1 className="text-2xl font-bold">Selamat {gr}, {user?.name} 👋</h1><p className="text-gray-600 mt-1">{todayStr}</p></div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              {[
+                { l: 'Karyawan', v: analytics.totalEmployees, i: '👥', bg: 'bg-blue-50', tx: 'text-blue-600', bd: 'border-blue-100' },
+                { l: 'Hadir', v: analytics.today.checkedIn, i: '✅', bg: 'bg-green-50', tx: 'text-green-600', bd: 'border-green-100', sub: `${analytics.today.attendanceRate}%` },
+                { l: 'Terlambat', v: analytics.today.late, i: '⏰', bg: 'bg-yellow-50', tx: 'text-yellow-600', bd: 'border-yellow-100' },
+                { l: 'Belum Hadir', v: analytics.today.notCheckedIn, i: '❌', bg: 'bg-red-50', tx: 'text-red-600', bd: 'border-red-100' },
+                { l: 'Lembur', v: analytics.overtime?.formatted || '0j', i: '🕐', bg: 'bg-indigo-50', tx: 'text-indigo-600', bd: 'border-indigo-100', sub: `${analytics.overtime?.total || 0} org` },
+              ].map((s, i) => (
+                <div key={i} className={`stat-card ${s.bg} border ${s.bd} rounded-2xl p-5`}>
+                  <span className="text-2xl">{s.i}</span><p className={`text-3xl font-bold ${s.tx} mt-2`}>{s.v}</p>
+                  <p className="text-sm text-gray-600 mt-1">{s.l}</p>{s.sub && <p className="text-xs text-gray-500">{s.sub}</p>}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {[
+                { l: 'Izin', v: analytics.today.izin, i: '📝', bg: 'bg-purple-50', bd: 'border-purple-100' },
+                { l: 'Sakit', v: analytics.today.sakit, i: '🤒', bg: 'bg-orange-50', bd: 'border-orange-100' },
+                { l: 'Selfie', v: analytics.today.withSelfie || 0, i: '📸', bg: 'bg-pink-50', bd: 'border-pink-100' },
+                { l: 'GPS', v: analytics.today.withLocation || 0, i: '📍', bg: 'bg-teal-50', bd: 'border-teal-100' },
+                { l: 'Pending Cuti', v: analytics.pendingLeaves || 0, i: '🏖️', bg: 'bg-cyan-50', bd: 'border-cyan-100' },
+              ].map((s, i) => (
+                <div key={i} className={`${s.bg} border ${s.bd} rounded-xl p-4 text-center`}>
+                  <span className="text-xl">{s.i}</span><p className="text-2xl font-bold mt-1">{s.v}</p><p className="text-xs text-gray-600">{s.l}</p>
+                </div>
+              ))}
+            </div>
+            {analytics.overtime?.pending > 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 flex items-center gap-4">
+                <span className="text-3xl">⏳</span>
+                <div className="flex-1"><p className="font-semibold text-yellow-800">{analytics.overtime.pending} pengajuan lembur menunggu</p></div>
+                <button onClick={() => setTab('overtime')} className="bg-yellow-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-yellow-600">Review</button>
+              </div>
+            )}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b"><h3 className="font-semibold">✅ Absensi Terbaru</h3></div>
+                <div className="divide-y divide-gray-50">{analytics.recentAttendance?.length > 0 ? analytics.recentAttendance.map((a, i) => (
+                  <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+                    <div className="flex items-center gap-3"><Av name={a.employee_name} /><div><p className="text-sm font-medium">{a.employee_name}{a.selfie_checkin_url && ' 📸'}{a.location_name && ' 📍'}</p><p className="text-xs text-gray-500">{a.division_name || a.department || '-'}</p></div></div>
+                    <div className="text-right"><p className="text-sm font-medium">{a.check_in ? new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</p><Badge status={a.status} /></div>
+                  </div>
+                )) : <div className="px-6 py-8 text-center text-gray-500">📭 Belum ada</div>}</div>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b"><h3 className="font-semibold">❌ Belum Check-in</h3></div>
+                <div className="divide-y divide-gray-50">{analytics.notCheckedIn?.length > 0 ? analytics.notCheckedIn.map((e, i) => (
+                  <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50">
+                    <div className="flex items-center gap-3"><Av name={e.name} color="bg-red-100 text-red-600" /><div><p className="text-sm font-medium">{e.name}</p><p className="text-xs text-gray-500">{e.division_name || e.department || '-'}</p></div></div>
+                    <span className="text-xs text-gray-400 font-mono">{e.phone_number}</span>
+                  </div>
+                )) : <div className="px-6 py-8 text-center text-gray-500">🎉 Semua sudah check-in!</div>}</div>
+              </div>
+            </div>
+            {/* WA Commands */}
+            <div className="bg-gradient-to-r from-brand-500 to-brand-600 rounded-2xl p-6 text-white">
+              <h3 className="text-lg font-bold mb-3">💬 Perintah WhatsApp v3.0</h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="bg-white/10 rounded-xl p-4 space-y-2 text-sm">
+                  <p className="font-bold text-brand-100">📋 Absensi:</p>
+                  <p>📸 Foto + <b>HADIR</b> → Check-in</p>
+                  <p>📸 Foto + <b>PULANG</b> → Check-out</p>
+                  <p>📊 <b>STATUS</b> / 📝 <b>IZIN</b> / 🤒 <b>SAKIT</b></p>
+                </div>
+                <div className="bg-white/10 rounded-xl p-4 space-y-2 text-sm">
+                  <p className="font-bold text-brand-100">🕐 Lembur:</p>
+                  <p>⏰ <b>LEMBUR</b> [alasan] → Ajukan</p>
+                  <p>✅ <b>SELESAI LEMBUR</b> → Akhiri</p>
+                  <p>📊 <b>REKAP</b> → Rekap bulan ini</p>
+                  <p className="text-brand-200 text-xs mt-2">💡 Pulang &gt; jam kerja = auto lembur</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ======== EMPLOYEES ======== */}
+        {tab === 'employees' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold">👥 Karyawan</h2>
+                <p className="text-gray-600 text-sm mt-1">{employees.length} terdaftar</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {['list', 'divisions', 'positions'].map(st => (
+                  <button key={st} onClick={() => setSubTab(st)} className={`px-4 py-2 rounded-xl text-sm font-medium ${subTab === st ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    {st === 'list' ? '👥 Daftar' : st === 'divisions' ? '🏗️ Divisi' : '💼 Jabatan'}
+                  </button>
+                ))}
+                {subTab === 'list' && (
+                  <button onClick={() => { setShowAdd(!showAdd); setEditId(null); resetEf(); setEErr(''); setEOk(''); }} className="bg-brand-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-brand-600 shadow-sm">
+                    {showAdd ? '✕ Tutup' : '+ Tambah'}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            {subTab === 'list' && (
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama, kode, HP, atau email karyawan..." className="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 shadow-sm" />
+                {search && <button onClick={() => setSearch('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600">✕</button>}
+              </div>
+            )}
+
+            {/* Add/Edit Employee Form */}
+            {subTab === 'list' && showAdd && (
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 animate-slide-up">
+                <h3 className="font-semibold mb-4">{editId ? '✏️ Edit Karyawan' : '➕ Tambah Karyawan'}</h3>
+                {eErr && <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm border border-red-100">❌ {eErr}</div>}
+                {eOk && <div className="bg-green-50 text-green-600 px-4 py-3 rounded-xl mb-4 text-sm border border-green-100">✅ {eOk}</div>}
+                <form onSubmit={addEmp}>
+                  <p className="text-sm font-semibold text-gray-500 mb-3">📋 Informasi Dasar</p>
+                  <div className="grid md:grid-cols-3 gap-4 mb-6">
+                    <InputField label="Nama" required type="text" value={ef.name} onChange={e => setEf({ ...ef, name: e.target.value })} placeholder="Nama lengkap" />
+                    <InputField label="No. WhatsApp" required type="text" value={ef.phone_number} onChange={e => setEf({ ...ef, phone_number: e.target.value })} placeholder="08123456789" />
+                    <InputField label="Email" type="email" value={ef.email} onChange={e => setEf({ ...ef, email: e.target.value })} placeholder="email@company.com" />
+                    <InputField label="Kode Karyawan" type="text" value={ef.employee_code} onChange={e => setEf({ ...ef, employee_code: e.target.value })} placeholder="Auto jika kosong" />
+                    <SelectField label="Divisi" value={ef.division_id} onChange={e => setEf({ ...ef, division_id: e.target.value })}>
+                      <option value="">-- Pilih Divisi --</option>
+                      {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </SelectField>
+                    <SelectField label="Jabatan" value={ef.position_id} onChange={e => setEf({ ...ef, position_id: e.target.value })}>
+                      <option value="">-- Pilih Jabatan --</option>
+                      {positions.filter(p => !ef.division_id || String(p.division_id) === String(ef.division_id)).map(p => <option key={p.id} value={p.id}>{p.name}{p.division_name ? ` (${p.division_name})` : ''}</option>)}
+                    </SelectField>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-500 mb-3">💼 Informasi Pekerjaan</p>
+                  <div className="grid md:grid-cols-3 gap-4 mb-6">
+                    <InputField label="Departemen" type="text" value={ef.department} onChange={e => setEf({ ...ef, department: e.target.value })} placeholder="IT, HRD, dll" />
+                    <SelectField label="Status Karyawan" value={ef.employment_status} onChange={e => setEf({ ...ef, employment_status: e.target.value })}>
+                      <option value="tetap">Tetap</option><option value="kontrak">Kontrak</option><option value="magang">Magang</option><option value="freelance">Freelance</option>
+                    </SelectField>
+                    <InputField label="Tanggal Mulai Kerja" type="date" value={ef.start_date} onChange={e => setEf({ ...ef, start_date: e.target.value })} />
+                    <InputField label="Gaji Pokok" type="number" value={ef.base_salary} onChange={e => setEf({ ...ef, base_salary: e.target.value })} placeholder="0" />
+                    <InputField label="Sisa Cuti" type="number" value={ef.leave_balance} onChange={e => setEf({ ...ef, leave_balance: e.target.value })} />
+                    <div className="flex items-center gap-3 pt-6">
+                      <input type="checkbox" id="radius_lock" checked={ef.radius_lock_enabled} onChange={e => setEf({ ...ef, radius_lock_enabled: e.target.checked })} className="w-4 h-4 text-brand-500 rounded" />
+                      <label htmlFor="radius_lock" className="text-sm font-medium text-gray-700">🔒 Radius Lock Aktif</label>
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-500 mb-3">👤 Informasi Pribadi</p>
+                  <div className="grid md:grid-cols-3 gap-4 mb-6">
+                    <InputField label="No. KTP" type="text" value={ef.ktp_number} onChange={e => setEf({ ...ef, ktp_number: e.target.value })} placeholder="16 digit" />
+                    <InputField label="NPWP" type="text" value={ef.npwp_number} onChange={e => setEf({ ...ef, npwp_number: e.target.value })} />
+                    <InputField label="Tanggal Lahir" type="date" value={ef.birth_date} onChange={e => setEf({ ...ef, birth_date: e.target.value })} />
+                    <InputField label="Tempat Lahir" type="text" value={ef.birth_place} onChange={e => setEf({ ...ef, birth_place: e.target.value })} />
+                    <SelectField label="Jenis Kelamin" value={ef.gender} onChange={e => setEf({ ...ef, gender: e.target.value })}>
+                      <option value="">-- Pilih --</option><option value="L">Laki-laki</option><option value="P">Perempuan</option>
+                    </SelectField>
+                    <InputField label="Kontak Darurat" type="text" value={ef.emergency_contact} onChange={e => setEf({ ...ef, emergency_contact: e.target.value })} />
+                    <InputField label="HP Darurat" type="text" value={ef.emergency_phone} onChange={e => setEf({ ...ef, emergency_phone: e.target.value })} />
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                      <textarea value={ef.address} onChange={e => setEf({ ...ef, address: e.target.value })} rows={2} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-sm" />
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button type="submit" disabled={eLoading} className="bg-brand-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600 disabled:opacity-50">{eLoading ? '⏳...' : editId ? '💾 Update' : '💾 Simpan'}</button>
+                    <button type="button" onClick={() => { setShowAdd(false); setEditId(null); resetEf(); }} className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-200">Batal</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Employee Detail Modal */}
+            {viewId && viewEmp && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setViewId(null); setViewEmp(null); }}>
+                <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold">👤 Detail Karyawan</h3>
+                    <button onClick={() => { setViewId(null); setViewEmp(null); }} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                  </div>
+                  <div className="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-xl">
+                    <Av name={viewEmp.name} color="bg-brand-100 text-brand-600" />
+                    <div><p className="text-lg font-bold">{viewEmp.name}</p><p className="text-sm text-gray-500">{viewEmp.employee_code || '-'} • {viewEmp.phone_number}</p></div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-500 mb-3">💼 Informasi Pekerjaan</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="text-gray-500 w-32 inline-block">Kode:</span> <span className="font-medium">{viewEmp.employee_code || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Divisi:</span> <span className="font-medium">{viewEmp.division_name || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Jabatan:</span> <span className="font-medium">{viewEmp.position_name || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Departemen:</span> <span className="font-medium">{viewEmp.department || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Status:</span> <span className="font-medium capitalize">{viewEmp.employment_status || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Mulai Kerja:</span> <span className="font-medium">{viewEmp.start_date ? new Date(viewEmp.start_date).toLocaleDateString('id-ID') : '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Gaji Pokok:</span> <span className="font-medium">Rp {Number(viewEmp.base_salary || 0).toLocaleString('id-ID')}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Sisa Cuti:</span> <span className="font-medium">{viewEmp.leave_balance || 0} hari</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Radius Lock:</span> <span className="font-medium">{viewEmp.radius_lock_enabled ? '🔒 Aktif' : '🔓 Nonaktif'}</span></p>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-500 mb-3">👤 Informasi Pribadi</h4>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="text-gray-500 w-32 inline-block">Email:</span> <span className="font-medium">{viewEmp.email || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">KTP:</span> <span className="font-medium">{viewEmp.ktp_number || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">NPWP:</span> <span className="font-medium">{viewEmp.npwp_number || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Kelamin:</span> <span className="font-medium">{viewEmp.gender === 'L' ? 'Laki-laki' : viewEmp.gender === 'P' ? 'Perempuan' : '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">TTL:</span> <span className="font-medium">{viewEmp.birth_place || '-'}{viewEmp.birth_date ? `, ${new Date(viewEmp.birth_date).toLocaleDateString('id-ID')}` : ''}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Alamat:</span> <span className="font-medium">{viewEmp.address || '-'}</span></p>
+                        <p><span className="text-gray-500 w-32 inline-block">Darurat:</span> <span className="font-medium">{viewEmp.emergency_contact || '-'} {viewEmp.emergency_phone ? `(${viewEmp.emergency_phone})` : ''}</span></p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6 pt-4 border-t">
+                    <button onClick={() => { setViewId(null); setViewEmp(null); startEdit(viewEmp); }} className="bg-brand-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-brand-600">✏️ Edit</button>
+                    <button onClick={() => { setViewId(null); setViewEmp(null); }} className="bg-gray-100 text-gray-700 px-5 py-2 rounded-xl text-sm font-semibold hover:bg-gray-200">Tutup</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Employee List */}
+            {subTab === 'list' && (
+              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                {filteredEmployees.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead><tr className="bg-gray-50 border-b">
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">ID</th>
+                        <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Divisi</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Jabatan</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">No. WA</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Hari Ini</th>
+                        <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                      </tr></thead>
+                      <tbody className="divide-y divide-gray-50">{filteredEmployees.map(emp => (
+                        <tr key={emp.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm font-mono text-gray-500">{emp.employee_code || '-'}</td>
+                          <td className="px-6 py-4"><div className="flex items-center gap-3"><Av name={emp.name} /><div><span className="text-sm font-medium">{emp.name}</span><p className="text-xs text-gray-500">{emp.department || '-'}</p></div></div></td>
+                          <td className="px-4 py-4 text-sm text-gray-600 hidden md:table-cell">{emp.division_name || '-'}</td>
+                          <td className="px-4 py-4 text-sm text-gray-600 hidden md:table-cell">{emp.position_name || '-'}</td>
+                          <td className="px-4 py-4 text-sm text-gray-600 font-mono">{emp.phone_number}</td>
+                          <td className="px-4 py-4 text-center"><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${emp.employment_status === 'tetap' ? 'bg-green-100 text-green-700' : emp.employment_status === 'kontrak' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>{emp.employment_status || '-'}</span></td>
+                          <td className="px-4 py-4 text-center">{parseInt(emp.today_checked_in) > 0 ? <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-medium">✅</span> : <span className="bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full text-xs font-medium">—</span>}</td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex gap-1 justify-end">
+                              <button onClick={() => viewEmployee(emp.id)} className="text-blue-500 text-xs font-medium hover:bg-blue-50 px-2 py-1.5 rounded-lg">👁️</button>
+                              <button onClick={() => startEdit(emp)} className="text-brand-500 text-xs font-medium hover:bg-brand-50 px-2 py-1.5 rounded-lg">✏️</button>
+                              <button onClick={() => delEmp(emp.id, emp.name)} className="text-red-500 text-xs font-medium hover:bg-red-50 px-2 py-1.5 rounded-lg">🗑️</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                ) : search ? (
+                  <div className="py-16 text-center">
+                    <p className="text-4xl mb-3">🔍</p>
+                    <p className="text-gray-600 font-medium">Karyawan tidak ditemukan</p>
+                    <p className="text-gray-400 text-sm mt-1">Coba kata kunci lain: &quot;{search}&quot;</p>
+                  </div>
+                ) : (
+                  <div className="py-16 text-center">
+                    <p className="text-4xl mb-3">👥</p><p className="text-gray-600">Belum ada karyawan</p>
+                    <button onClick={() => setShowAdd(true)} className="mt-4 bg-brand-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600">+ Tambah</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Divisions Tab */}
+            {subTab === 'divisions' && (
+              <div className="space-y-4">
+                <form onSubmit={addDiv} className="bg-white rounded-2xl border p-4 flex gap-3 items-end">
+                  <div className="flex-1"><label className="block text-sm font-medium mb-1">Nama Divisi</label><input type="text" required value={divForm.name} onChange={e => setDivForm({ ...divForm, name: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="Engineering" /></div>
+                  <div className="flex-1"><label className="block text-sm font-medium mb-1">Deskripsi</label><input type="text" value={divForm.description} onChange={e => setDivForm({ ...divForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="Optional" /></div>
+                  <button type="submit" className="bg-brand-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600 whitespace-nowrap">+ Tambah</button>
+                </form>
+                <div className="bg-white rounded-2xl border overflow-hidden">
+                  <table className="w-full"><thead><tr className="bg-gray-50 border-b"><th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Divisi</th><th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Deskripsi</th><th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th><th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th></tr></thead>
+                  <tbody className="divide-y">{divisions.map(d => (
+                    <tr key={d.id} className="hover:bg-gray-50"><td className="px-6 py-4 text-sm font-medium">{d.name}</td><td className="px-4 py-4 text-sm text-gray-500">{d.description || '-'}</td><td className="px-4 py-4 text-center text-sm">{d.employee_count || 0}</td><td className="px-6 py-4 text-right"><button onClick={() => delDiv(d.id)} className="text-red-500 text-xs hover:bg-red-50 px-3 py-1 rounded-lg">Hapus</button></td></tr>
+                  ))}{divisions.length === 0 && <tr><td colSpan="4" className="py-12 text-center text-gray-500">Belum ada divisi</td></tr>}</tbody></table>
+                </div>
+              </div>
+            )}
+
+            {/* Positions Tab */}
+            {subTab === 'positions' && (
+              <div className="space-y-4">
+                <form onSubmit={addPos} className="bg-white rounded-2xl border p-4 flex gap-3 items-end flex-wrap">
+                  <div className="flex-1 min-w-[150px]"><label className="block text-sm font-medium mb-1">Nama Jabatan</label><input type="text" required value={posForm.name} onChange={e => setPosForm({ ...posForm, name: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="Staff" /></div>
+                  <div className="flex-1 min-w-[150px]"><label className="block text-sm font-medium mb-1">Divisi</label><select value={posForm.division_id} onChange={e => setPosForm({ ...posForm, division_id: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm"><option value="">-- Pilih --</option>{divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></div>
+                  <div className="flex-1 min-w-[120px]"><label className="block text-sm font-medium mb-1">Gaji Pokok</label><input type="number" value={posForm.base_salary} onChange={e => setPosForm({ ...posForm, base_salary: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="0" /></div>
+                  <button type="submit" className="bg-brand-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600 whitespace-nowrap">+ Tambah</button>
+                </form>
+                <div className="bg-white rounded-2xl border overflow-hidden">
+                  <table className="w-full"><thead><tr className="bg-gray-50 border-b"><th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Jabatan</th><th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Divisi</th><th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Gaji Pokok</th><th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th><th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th></tr></thead>
+                  <tbody className="divide-y">{positions.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50"><td className="px-6 py-4 text-sm font-medium">{p.name}</td><td className="px-4 py-4 text-sm text-gray-500">{p.division_name || '-'}</td><td className="px-4 py-4 text-center text-sm">Rp {Number(p.base_salary || 0).toLocaleString('id-ID')}</td><td className="px-4 py-4 text-center text-sm">{p.employee_count || 0}</td><td className="px-6 py-4 text-right"><button onClick={() => delPos(p.id)} className="text-red-500 text-xs hover:bg-red-50 px-3 py-1 rounded-lg">Hapus</button></td></tr>
+                  ))}{positions.length === 0 && <tr><td colSpan="5" className="py-12 text-center text-gray-500">Belum ada jabatan</td></tr>}</tbody></table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======== ATTENDANCE ======== */}
+        {tab === 'attendance' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between"><div><h2 className="text-2xl font-bold">📅 Absensi Hari Ini</h2><p className="text-gray-600 text-sm mt-1">{todayStr}</p></div><button onClick={loadAtt} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm hover:bg-gray-200">🔄 Refresh</button></div>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              {attLoading ? <Spinner /> : attData.length > 0 ? (
+                <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b">
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Masuk</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Pulang</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">📸</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">📍 Lokasi</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">🕐</th>
+                </tr></thead><tbody className="divide-y divide-gray-50">{attData.map((a, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-6 py-4"><div className="flex items-center gap-3"><Av name={a.employee_name} /><div><p className="text-sm font-medium">{a.employee_name}</p><p className="text-xs text-gray-500">{a.employee_code || ''} {a.division_name || a.department || ''}</p></div></div></td>
+                    <td className="px-4 py-4 text-center text-sm">{a.check_in ? new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                    <td className="px-4 py-4 text-center text-sm">{a.check_out ? new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                    <td className="px-4 py-4 text-center"><Badge status={a.status} /></td>
+                    <td className="px-4 py-4 text-center hidden md:table-cell">{a.selfie_checkin_url ? <a href={a.selfie_checkin_url} target="_blank" rel="noopener" className="text-brand-500 text-xs underline">📸 Lihat</a> : <span className="text-gray-400 text-xs">—</span>}</td>
+                    <td className="px-4 py-4 text-center hidden lg:table-cell">{a.location_name ? <span className="text-xs text-gray-600 max-w-[150px] truncate block" title={a.location_name}>📍 {a.location_name}</span> : <span className="text-gray-400 text-xs">—</span>}</td>
+                    <td className="px-4 py-4 text-center">{(a.overtime_minutes || 0) > 0 ? <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">{Math.floor(a.overtime_minutes / 60)}j{a.overtime_minutes % 60}m</span> : <span className="text-gray-400 text-xs">—</span>}</td>
+                  </tr>
+                ))}</tbody></table></div>
+              ) : <div className="py-16 text-center text-gray-500">📭 Belum ada data absensi hari ini</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ======== OVERTIME ======== */}
+        {tab === 'overtime' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold">🕐 Lembur</h2>
+              <div className="flex items-center gap-3"><MonthSelect /><button onClick={loadOT} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm hover:bg-gray-200">🔄</button></div>
+            </div>
+            {otLoading ? <Spinner /> : (
+              <>
+                {/* Summary */}
+                {otSummary.filter(e => (parseInt(e.overtime_days) || 0) > 0).length > 0 && (
+                  <div className="bg-white rounded-2xl border overflow-hidden">
+                    <div className="px-6 py-4 border-b"><h3 className="font-semibold">📊 Ringkasan — {mons[rMonth]} {rYear}</h3></div>
+                    <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b">
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Hari</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-indigo-600 uppercase">Total</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Auto</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Manual</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-yellow-600 uppercase">Pending</th>
+                    </tr></thead><tbody className="divide-y">{otSummary.filter(e => (parseInt(e.overtime_days) || 0) > 0).map((e, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="px-6 py-4"><div className="flex items-center gap-3"><Av name={e.name} /><div><span className="text-sm font-medium">{e.name}</span><p className="text-xs text-gray-500">{e.department || '-'}</p></div></div></td>
+                        <td className="px-4 py-4 text-center text-sm">{e.overtime_days}</td>
+                        <td className="px-4 py-4 text-center"><span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold">{e.formatted}</span></td>
+                        <td className="px-4 py-4 text-center text-sm">{e.auto_count || 0}</td>
+                        <td className="px-4 py-4 text-center text-sm">{e.manual_count || 0}</td>
+                        <td className="px-4 py-4 text-center">{(parseInt(e.pending_count) || 0) > 0 ? <span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-bold">{e.pending_count}</span> : '0'}</td>
+                      </tr>
+                    ))}</tbody></table></div>
+                  </div>
+                )}
+                {/* Detail */}
+                <div className="bg-white rounded-2xl border overflow-hidden">
+                  <div className="px-6 py-4 border-b"><h3 className="font-semibold">📋 Detail Lembur</h3></div>
+                  {otData.length > 0 ? (
+                    <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b">
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tanggal</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tipe</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Durasi</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Alasan</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                    </tr></thead><tbody className="divide-y">{otData.map((ot, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="px-6 py-4"><div className="flex items-center gap-3"><Av name={ot.employee_name} /><span className="text-sm font-medium">{ot.employee_name}</span></div></td>
+                        <td className="px-4 py-4 text-sm">{new Date(ot.date).toLocaleDateString('id-ID')}</td>
+                        <td className="px-4 py-4 text-center"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ot.type === 'auto' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>{ot.type === 'auto' ? '🤖 Auto' : '✋ Manual'}</span></td>
+                        <td className="px-4 py-4 text-center text-sm">{ot.duration_minutes > 0 ? `${Math.floor(ot.duration_minutes / 60)}j ${ot.duration_minutes % 60}m` : '—'}</td>
+                        <td className="px-4 py-4 text-center"><OtBadge status={ot.status} /></td>
+                        <td className="px-4 py-4 text-xs text-gray-500 max-w-[200px] truncate hidden md:table-cell">{ot.reason || '-'}</td>
+                        <td className="px-6 py-4 text-right">{ot.status === 'pending' && (
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => approveOT(ot.id)} className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-medium hover:bg-green-200">✅</button>
+                            <button onClick={() => rejectOT(ot.id)} className="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-medium hover:bg-red-200">❌</button>
+                          </div>
+                        )}</td>
+                      </tr>
+                    ))}</tbody></table></div>
+                  ) : <div className="py-12 text-center text-gray-500">🕐 Belum ada data lembur</div>}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ======== LEAVES ======== */}
+        {tab === 'leaves' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">🏖️ Cuti & Izin</h2>
+              <button onClick={loadLeaves} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm hover:bg-gray-200">🔄 Refresh</button>
+            </div>
+            <div className="bg-white rounded-2xl border overflow-hidden">
+              {leavesLoading ? <Spinner /> : leavesData.length > 0 ? (
+                <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b">
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tipe</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Periode</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Hari</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Alasan</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                </tr></thead><tbody className="divide-y">{leavesData.map((l, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-6 py-4"><div className="flex items-center gap-3"><Av name={l.employee_name} /><span className="text-sm font-medium">{l.employee_name}</span></div></td>
+                    <td className="px-4 py-4 text-center"><span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${l.type === 'cuti' ? 'bg-blue-100 text-blue-700' : l.type === 'sakit' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700'}`}>{l.type}</span></td>
+                    <td className="px-4 py-4 text-sm">{new Date(l.start_date).toLocaleDateString('id-ID')} - {new Date(l.end_date).toLocaleDateString('id-ID')}</td>
+                    <td className="px-4 py-4 text-center text-sm font-medium">{l.total_days}</td>
+                    <td className="px-4 py-4 text-xs text-gray-500 max-w-[200px] truncate hidden md:table-cell">{l.reason || '-'}</td>
+                    <td className="px-4 py-4 text-center"><OtBadge status={l.status} /></td>
+                    <td className="px-6 py-4 text-right">{l.status === 'pending' && (
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => approveLeave(l.id)} className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-medium hover:bg-green-200">✅</button>
+                        <button onClick={() => rejectLeave(l.id)} className="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-medium hover:bg-red-200">❌</button>
+                      </div>
+                    )}</td>
+                  </tr>
+                ))}</tbody></table></div>
+              ) : <div className="py-16 text-center text-gray-500">🏖️ Belum ada pengajuan cuti/izin</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ======== REPORTS ======== */}
+        {tab === 'reports' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <h2 className="text-2xl font-bold">📤 Laporan</h2>
+              <div className="flex items-center gap-3"><MonthSelect /><button onClick={doExport} className="bg-brand-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-brand-600 shadow-sm">📥 Export CSV</button></div>
+            </div>
+            <div className="bg-white rounded-2xl border overflow-hidden">
+              <div className="px-6 py-4 border-b"><h3 className="font-semibold">Ringkasan — {mons[rMonth]} {rYear}</h3></div>
+              {mReport.length > 0 ? (
+                <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b">
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Karyawan</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-green-600 uppercase">Hadir</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-yellow-600 uppercase">Telat</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-purple-600 uppercase">Izin</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-orange-600 uppercase">Sakit</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-indigo-600 uppercase">Lembur</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-pink-600 uppercase hidden md:table-cell">Selfie</th>
+                  <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 uppercase">Total</th>
+                </tr></thead><tbody className="divide-y">{mReport.map((e, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-6 py-4"><div className="flex items-center gap-3"><Av name={e.name} /><div><span className="text-sm font-medium">{e.name}</span><p className="text-xs text-gray-500">{e.division_name || e.department || '-'}</p></div></div></td>
+                    <td className="px-3 py-4 text-center"><span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-bold">{e.hadir || 0}</span></td>
+                    <td className="px-3 py-4 text-center"><span className="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-bold">{e.terlambat || 0}</span></td>
+                    <td className="px-3 py-4 text-center"><span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs font-bold">{e.izin || 0}</span></td>
+                    <td className="px-3 py-4 text-center"><span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-bold">{e.sakit || 0}</span></td>
+                    <td className="px-3 py-4 text-center"><span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-bold">{e.overtime_formatted || '0j 0m'}</span></td>
+                    <td className="px-3 py-4 text-center hidden md:table-cell text-xs">{e.selfie_count || 0}x</td>
+                    <td className="px-3 py-4 text-center text-sm font-bold">{e.total_records || 0}</td>
+                  </tr>
+                ))}</tbody></table></div>
+              ) : <div className="py-16 text-center text-gray-500">📊 Belum ada data</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ======== SETTINGS ======== */}
+        {tab === 'settings' && (
+          <div className="space-y-6 animate-fade-in">
+            <h2 className="text-2xl font-bold">⚙️ Pengaturan</h2>
+            {settingsLoading ? <Spinner /> : settings && (
+              <div className="space-y-6">
+                {/* Company Info */}
+                <div className="bg-white rounded-2xl border p-6">
+                  <h3 className="text-lg font-semibold mb-4">🏢 Informasi Perusahaan</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <InputField label="Nama Perusahaan" type="text" value={settingsForm.company_name || ''} onChange={e => setSettingsForm({ ...settingsForm, company_name: e.target.value })} />
+                    <InputField label="Email" type="email" value={settingsForm.company_email || ''} onChange={e => setSettingsForm({ ...settingsForm, company_email: e.target.value })} />
+                    <InputField label="Telepon" type="text" value={settingsForm.company_phone || ''} onChange={e => setSettingsForm({ ...settingsForm, company_phone: e.target.value })} />
+                    <InputField label="Logo URL" type="text" value={settingsForm.logo_url || ''} onChange={e => setSettingsForm({ ...settingsForm, logo_url: e.target.value })} />
+                    <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Alamat</label><textarea value={settingsForm.company_address || ''} onChange={e => setSettingsForm({ ...settingsForm, company_address: e.target.value })} rows={2} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
+                  </div>
+                </div>
+
+                {/* Work Hours */}
+                <div className="bg-white rounded-2xl border p-6">
+                  <h3 className="text-lg font-semibold mb-4">⏰ Jam Kerja</h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <InputField label="Jam Masuk" type="time" value={settingsForm.work_start || '08:00'} onChange={e => setSettingsForm({ ...settingsForm, work_start: e.target.value })} />
+                    <InputField label="Jam Pulang" type="time" value={settingsForm.work_end || '17:00'} onChange={e => setSettingsForm({ ...settingsForm, work_end: e.target.value })} />
+                    <InputField label="Toleransi Telat (menit)" type="number" value={settingsForm.late_tolerance_minutes || 15} onChange={e => setSettingsForm({ ...settingsForm, late_tolerance_minutes: parseInt(e.target.value) })} />
+                  </div>
+                  <div className="flex flex-wrap gap-6 mt-4">
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={settingsForm.require_selfie || false} onChange={e => setSettingsForm({ ...settingsForm, require_selfie: e.target.checked })} className="w-4 h-4 text-brand-500 rounded" /><span className="text-sm">📸 Wajib Selfie</span></label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={settingsForm.require_location || false} onChange={e => setSettingsForm({ ...settingsForm, require_location: e.target.checked })} className="w-4 h-4 text-brand-500 rounded" /><span className="text-sm">📍 Wajib Lokasi</span></label>
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={settingsForm.overtime_enabled || false} onChange={e => setSettingsForm({ ...settingsForm, overtime_enabled: e.target.checked })} className="w-4 h-4 text-brand-500 rounded" /><span className="text-sm">🕐 Lembur Aktif</span></label>
+                  </div>
+                </div>
+
+                {/* Office Location & Radius */}
+                <div className="bg-white rounded-2xl border p-6">
+                  <h3 className="text-lg font-semibold mb-4">📍 Lokasi Kantor & Radius</h3>
+                  <div className="grid md:grid-cols-3 gap-4 mb-4">
+                    <InputField label="Latitude" type="text" value={settingsForm.office_latitude || ''} onChange={e => setSettingsForm({ ...settingsForm, office_latitude: e.target.value })} placeholder="-6.2088" />
+                    <InputField label="Longitude" type="text" value={settingsForm.office_longitude || ''} onChange={e => setSettingsForm({ ...settingsForm, office_longitude: e.target.value })} placeholder="106.8456" />
+                    <InputField label="Radius (meter)" type="number" value={settingsForm.allowed_radius_meters || 500} onChange={e => setSettingsForm({ ...settingsForm, allowed_radius_meters: parseInt(e.target.value) })} />
+                  </div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <label className="flex items-center gap-2"><input type="checkbox" checked={settingsForm.radius_lock_enabled || false} onChange={e => setSettingsForm({ ...settingsForm, radius_lock_enabled: e.target.checked })} className="w-4 h-4 text-brand-500 rounded" /><span className="text-sm font-medium">🔒 Aktifkan Radius Lock Global</span></label>
+                  </div>
+                  <div className="md:col-span-3"><label className="block text-sm font-medium text-gray-700 mb-1">Alamat Kantor</label><textarea value={settingsForm.office_address || ''} onChange={e => setSettingsForm({ ...settingsForm, office_address: e.target.value })} rows={2} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="Jl. Sudirman No. 1, Jakarta" /></div>
+                  {settingsForm.office_latitude && settingsForm.office_longitude && (
+                    <div className="mt-4 p-3 bg-green-50 border border-green-100 rounded-xl">
+                      <p className="text-sm text-green-700">📍 Lokasi kantor: {settingsForm.office_latitude}, {settingsForm.office_longitude}</p>
+                      <a href={`https://www.openstreetmap.org/?mlat=${settingsForm.office_latitude}&mlon=${settingsForm.office_longitude}#map=17/${settingsForm.office_latitude}/${settingsForm.office_longitude}`} target="_blank" rel="noopener" className="text-xs text-green-600 underline">🗺️ Lihat di OpenStreetMap</a>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2">💡 Tips: Buka Google Maps → klik lokasi kantor → salin koordinat latitude & longitude</p>
+                </div>
+
+                {/* WhatsApp / Fonnte Config */}
+                <div className="bg-white rounded-2xl border p-6">
+                  <h3 className="text-lg font-semibold mb-4">💬 WhatsApp (Fonnte) Config</h3>
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-blue-700">ℹ️ Setiap perusahaan menggunakan akun Fonnte masing-masing. Daftar di <a href="https://fonnte.com" target="_blank" rel="noopener" className="underline font-medium">fonnte.com</a></p>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <InputField label="Fonnte API URL" type="text" value={settingsForm.wa_api_url || ''} onChange={e => setSettingsForm({ ...settingsForm, wa_api_url: e.target.value })} placeholder="https://api.fonnte.com/send" />
+                    <InputField label="Fonnte Token" type="text" value={settingsForm.wa_api_token || ''} onChange={e => setSettingsForm({ ...settingsForm, wa_api_token: e.target.value })} placeholder="Token dari Fonnte" />
+                    <InputField label="Nomor WA Device" type="text" value={settingsForm.wa_device_number || ''} onChange={e => setSettingsForm({ ...settingsForm, wa_device_number: e.target.value })} placeholder="628xxx (nomor yang terhubung di Fonnte)" />
+                  </div>
+                  <div className="mt-4 flex gap-3">
+                    <button onClick={async () => { try { const r = await api.testWA(); alert(r.success ? '✅ ' + r.message : '❌ ' + r.message); } catch (e) { alert('❌ ' + e.message); } }} className="bg-green-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-green-600">🔗 Test Koneksi</button>
+                  </div>
+                  <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">📋 Webhook URL untuk Fonnte:</p>
+                    <code className="text-xs bg-white px-3 py-2 rounded-lg block border break-all">{typeof window !== 'undefined' ? `${window.location.origin.replace(':3000', ':3001')}/api/webhook` : 'https://yourdomain.com/api/webhook'}</code>
+                    <p className="text-xs text-gray-500 mt-2">Salin URL ini dan paste di pengaturan Webhook Fonnte Anda.</p>
+                  </div>
+                </div>
+
+                <button onClick={saveSettings} disabled={settingsSaving} className="bg-brand-500 text-white px-8 py-3 rounded-xl font-semibold hover:bg-brand-600 disabled:opacity-50 shadow-sm">
+                  {settingsSaving ? '⏳ Menyimpan...' : '💾 Simpan Semua Pengaturan'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ======== PAYMENT ======== */}
+        {tab === 'payment' && (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h2 className="text-2xl font-bold">💰 Paket & Pembayaran</h2>
+              <p className="text-gray-600 text-sm mt-1">Paket saat ini: <span className="font-bold text-brand-600 capitalize">{user?.plan || 'free'}</span></p>
+            </div>
+            {/* Plans */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {plans.map((plan, i) => (
+                <div key={plan.id} className={`rounded-2xl p-6 border-2 ${user?.plan === plan.slug ? 'border-brand-500 bg-brand-50' : 'border-gray-200 bg-white'}`}>
+                  {user?.plan === plan.slug && <div className="text-xs font-bold text-brand-600 mb-2">✅ PAKET AKTIF</div>}
+                  <h3 className="text-xl font-bold">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mt-2 mb-4"><span className="text-sm">Rp</span><span className="text-3xl font-extrabold">{Number(plan.price).toLocaleString('id-ID')}</span><span className="text-sm text-gray-500">/{plan.duration_days || 30} hari</span></div>
+                  <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+                  <ul className="space-y-2 mb-6">{(typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features || []).map((f, j) => <li key={j} className="text-sm text-gray-700">✓ {f.replace(/_/g, ' ')}</li>)}</ul>
+                  <p className="text-sm font-medium text-gray-700">👥 Maks {plan.max_employees} karyawan</p>
+                  {user?.plan !== plan.slug && plan.price > 0 && (
+                    <button onClick={async () => {
+                      if (!confirm(`Upgrade ke ${plan.name}? Rp ${Number(plan.price).toLocaleString('id-ID')}`)) return;
+                      try { const r = await api.createPayment({ plan_id: plan.id }); alert(r.message); loadPayment(); } catch (e) { alert(e.message); }
+                    }} className="mt-4 w-full bg-brand-500 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-brand-600">Upgrade</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Bank Accounts */}
+            {banks.length > 0 && (
+              <div className="bg-white rounded-2xl border p-6">
+                <h3 className="text-lg font-semibold mb-4">🏦 Transfer ke Rekening</h3>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {banks.map(b => (
+                    <div key={b.id} className="bg-gray-50 rounded-xl p-4 border">
+                      <p className="font-bold text-lg">{b.bank_name}</p>
+                      <p className="text-sm font-mono mt-1">{b.account_number}</p>
+                      <p className="text-sm text-gray-600">a/n {b.account_name}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* My Payments */}
+            {myPayments.length > 0 && (
+              <div className="bg-white rounded-2xl border overflow-hidden">
+                <div className="px-6 py-4 border-b"><h3 className="font-semibold">📋 Riwayat Pembayaran</h3></div>
+                <div className="overflow-x-auto"><table className="w-full"><thead><tr className="bg-gray-50 border-b">
+                  <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Invoice</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Paket</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Jumlah</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Tanggal</th>
+                  <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                </tr></thead><tbody className="divide-y">{myPayments.map((p, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-mono">{p.invoice_number}</td>
+                    <td className="px-4 py-4 text-sm">{p.plan_name || '-'}</td>
+                    <td className="px-4 py-4 text-right text-sm font-medium">Rp {Number(p.amount).toLocaleString('id-ID')}</td>
+                    <td className="px-4 py-4 text-center"><OtBadge status={p.status} /></td>
+                    <td className="px-4 py-4 text-sm">{new Date(p.created_at).toLocaleDateString('id-ID')}</td>
+                    <td className="px-6 py-4 text-right">{p.status === 'pending' && (
+                      <button onClick={async () => {
+                        try { await api.confirmTransfer(p.id, { bank_name: 'BCA', transfer_date: new Date().toISOString() }); alert('✅ Konfirmasi transfer dikirim!'); loadPayment(); } catch (e) { alert(e.message); }
+                      }} className="bg-brand-500 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-brand-600">Sudah Transfer</button>
+                    )}</td>
+                  </tr>
+                ))}</tbody></table></div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
