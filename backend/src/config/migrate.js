@@ -4,7 +4,7 @@ const { pool } = require('./db');
 
 async function migrate() {
   try {
-    console.log('🔄 Running ABSENIN v3.0 migration...');
+    console.log('🔄 Running ABSENIN migration...');
     const schemaPath = path.join(__dirname, '../../../database/schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf-8');
     await pool.query(schema);

@@ -53,11 +53,13 @@ class ApiClient {
   async getMonthlyReport(m, y) { return this.request(`/api/reports/monthly?month=${m}&year=${y}`); }
   async getDailyReport(date) { return this.request(`/api/reports/daily?date=${date}`); }
 
-  // Overtime & Leaves
+  // Overtime
   async getOvertime(p = {}) { return this.request(`/api/overtime?${new URLSearchParams(p)}`); }
   async getOvertimeSummary(m, y) { return this.request(`/api/overtime/summary?month=${m}&year=${y}`); }
   async approveOvertime(id) { return this.request(`/api/overtime/${id}/approve`, { method: 'PUT' }); }
   async rejectOvertime(id, note) { return this.request(`/api/overtime/${id}/reject`, { method: 'PUT', body: JSON.stringify({ note }) }); }
+
+  // Leaves
   async getLeaves(p = {}) { return this.request(`/api/leaves?${new URLSearchParams(p)}`); }
   async createLeave(d) { return this.request('/api/leaves', { method: 'POST', body: JSON.stringify(d) }); }
   async approveLeave(id) { return this.request(`/api/leaves/${id}/approve`, { method: 'PUT' }); }
@@ -78,13 +80,7 @@ class ApiClient {
   // Superadmin
   async getSADashboard() { return this.request('/api/superadmin/dashboard'); }
   async getSACompanies(p = {}) { return this.request(`/api/superadmin/companies?${new URLSearchParams(p)}`); }
-  async getSACompany(id) { return this.request(`/api/superadmin/companies/${id}`); }
-  async createSACompany(d) { return this.request('/api/superadmin/companies', { method: 'POST', body: JSON.stringify(d) }); }
   async updateSACompany(id, d) { return this.request(`/api/superadmin/companies/${id}`, { method: 'PUT', body: JSON.stringify(d) }); }
-  async deleteSACompany(id) { return this.request(`/api/superadmin/companies/${id}`, { method: 'DELETE' }); }
-  async getSAUsers(p = {}) { return this.request(`/api/superadmin/users?${new URLSearchParams(p)}`); }
-  async changeSAUserPassword(id, pw) { return this.request(`/api/superadmin/users/${id}/password`, { method: 'PUT', body: JSON.stringify({ new_password: pw }) }); }
-  async toggleSAUser(id) { return this.request(`/api/superadmin/users/${id}/toggle`, { method: 'PUT' }); }
   async getSAPlans() { return this.request('/api/superadmin/plans'); }
   async createSAPlan(d) { return this.request('/api/superadmin/plans', { method: 'POST', body: JSON.stringify(d) }); }
   async updateSAPlan(id, d) { return this.request(`/api/superadmin/plans/${id}`, { method: 'PUT', body: JSON.stringify(d) }); }
@@ -96,7 +92,6 @@ class ApiClient {
   async getSAPayments(p = {}) { return this.request(`/api/superadmin/payments?${new URLSearchParams(p)}`); }
   async confirmSAPayment(id) { return this.request(`/api/superadmin/payments/${id}/confirm`, { method: 'PUT' }); }
   async rejectSAPayment(id, reason) { return this.request(`/api/superadmin/payments/${id}/reject`, { method: 'PUT', body: JSON.stringify({ reason }) }); }
-  async getSAStats() { return this.request('/api/superadmin/stats'); }
 
   async exportCSV(sd, ed) {
     const token = this.getToken();

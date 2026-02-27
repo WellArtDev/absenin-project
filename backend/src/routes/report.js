@@ -2,68 +2,73 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/db');
 const { authenticate } = require('../middleware/auth');
-
 router.use(authenticate);
 
-router.get('/', async (req, res) => {
+router.get('/export', async (req, res) => {
   try {
-    const { start_date, end_date, type } = req.query;
+    const { start_date, end_date, format = 'csv' } = req.query;
     const cid = req.user.companyId;
-
-    if (!start_date || !end_date) {
-      return res.status(400).json({ success: false, message: 'Tanggal mulai dan akhir wajib' });
+    const sd = start_date || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    const ed = end_date || new Date().toISOString().split('T')[0];
+    const result = await query(
+      `SELECT e.employee_code as "ID", e.name as "Nama", e.phone_number as "HP", e.department as "Dept",
+              d.name as "Divisi", p.name as "Jabatan", a.date as "Tanggal",
+              TO_CHAR(a.check_in,'HH24:MI') as "Masuk", TO_CHAR(a.check_out,'HH24:MI') as "Pulang", a.status as "Status",
+              a.location_name as "Lokasi", a.distance_meters as "Jarak(m)",
+              CASE WHEN a.selfie_checkin_url IS NOT NULL THEN 'Ya' ELSE 'Tidak' END as "Selfie",
+              COALESCE(a.overtime_minutes,0) as "Lembur(min)",
+              CONCAT(FLOOR(COALESCE(a.overtime_minutes,0)/60),'j ',MOD(COALESCE(a.overtime_minutes,0),60),'m') as "Lembur"
+       FROM attendance a JOIN employees e ON a.employee_id=e.id 
+       LEFT JOIN divisions d ON d.id=e.division_id
+       LEFT JOIN positions p ON p.id=e.position_id
+       WHERE a.company_id=$1 AND a.date BETWEEN $2 AND $3 ORDER BY a.date DESC, e.name`,
+      [cid, sd, ed]);
+    if (format === 'csv') {
+      const h = ['ID', 'Nama', 'HP', 'Dept', 'Divisi', 'Jabatan', 'Tanggal', 'Masuk', 'Pulang', 'Status', 'Lokasi', 'Jarak(m)', 'Selfie', 'Lembur(min)', 'Lembur'];
+      let csv = h.join(',') + '\n';
+      result.rows.forEach(r => { csv += h.map(k => `"${String(r[k] || '').replace(/"/g, '""')}"`).join(',') + '\n'; });
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename=absensi_${sd}_${ed}.csv`);
+      return res.send('\ufeff' + csv);
     }
+    res.json({ success: true, data: result.rows });
+  } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
+});
 
-    let data;
-    if (type === 'overtime') {
-      const r = await query(
-        `SELECT o.date, e.name, o.duration_minutes, o.status, o.reason
-         FROM overtime o JOIN employees e ON e.id=o.employee_id
-         WHERE o.company_id=$1 AND o.date BETWEEN $2 AND $3
-         ORDER BY o.date DESC`,
-        [cid, start_date, end_date]
-      );
-      data = r.rows;
-    } else if (type === 'leaves') {
-      const r = await query(
-        `SELECT l.start_date, l.end_date, e.name, l.type, l.total_days, l.status, l.reason
-         FROM leaves l JOIN employees e ON e.id=l.employee_id
-         WHERE l.company_id=$1 AND l.start_date BETWEEN $2 AND $3
-         ORDER BY l.start_date DESC`,
-        [cid, start_date, end_date]
-      );
-      data = r.rows;
-    } else if (type === 'summary') {
-      const r = await query(
-        `SELECT e.name, e.employee_code,
-          COUNT(a.id) as total_days,
-          COUNT(CASE WHEN a.status='hadir' THEN 1 END) as hadir,
-          COUNT(CASE WHEN a.status='terlambat' THEN 1 END) as terlambat,
-          COALESCE(SUM(a.overtime_minutes), 0) as total_overtime_min
-         FROM employees e
-         LEFT JOIN attendance a ON a.employee_id=e.id AND a.date BETWEEN $2 AND $3
-         WHERE e.company_id=$1 AND e.is_active=true
-         GROUP BY e.id, e.name, e.employee_code
-         ORDER BY e.name`,
-        [cid, start_date, end_date]
-      );
-      data = r.rows;
-    } else {
-      const r = await query(
-        `SELECT a.date, e.name, e.employee_code,
-          TO_CHAR(a.check_in, 'HH24:MI') as masuk,
-          TO_CHAR(a.check_out, 'HH24:MI') as pulang,
-          a.status, a.location_name, a.overtime_minutes
-         FROM attendance a JOIN employees e ON e.id=a.employee_id
-         WHERE a.company_id=$1 AND a.date BETWEEN $2 AND $3
-         ORDER BY a.date DESC, e.name`,
-        [cid, start_date, end_date]
-      );
-      data = r.rows;
-    }
+router.get('/monthly', async (req, res) => {
+  try {
+    const m = req.query.month || new Date().getMonth() + 1;
+    const y = req.query.year || new Date().getFullYear();
+    const result = await query(
+      `SELECT e.id, e.name, e.department, e.employee_code, d.name as division_name, p.name as position_name,
+        COUNT(*) FILTER (WHERE a.status='HADIR') as hadir, COUNT(*) FILTER (WHERE a.status='TERLAMBAT') as terlambat,
+        COUNT(*) FILTER (WHERE a.status='IZIN') as izin, COUNT(*) FILTER (WHERE a.status='SAKIT') as sakit, 
+        COUNT(a.id) as total_records,
+        SUM(COALESCE(a.overtime_minutes,0)) as overtime_minutes,
+        CONCAT(FLOOR(SUM(COALESCE(a.overtime_minutes,0))/60),'j ',MOD(SUM(COALESCE(a.overtime_minutes,0))::int,60),'m') as overtime_formatted,
+        COUNT(*) FILTER (WHERE a.selfie_checkin_url IS NOT NULL) as selfie_count
+       FROM employees e 
+       LEFT JOIN attendance a ON a.employee_id=e.id AND EXTRACT(MONTH FROM a.date)=$2 AND EXTRACT(YEAR FROM a.date)=$3
+       LEFT JOIN divisions d ON d.id=e.division_id
+       LEFT JOIN positions p ON p.id=e.position_id
+       WHERE e.company_id=$1 AND e.is_active=true GROUP BY e.id, d.name, p.name ORDER BY e.name`,
+      [req.user.companyId, m, y]);
+    res.json({ success: true, data: result.rows, period: { month: m, year: y } });
+  } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
+});
 
-    res.json({ success: true, data });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+router.get('/daily', async (req, res) => {
+  try {
+    const date = req.query.date || new Date().toISOString().split('T')[0];
+    const result = await query(
+      `SELECT a.*, e.name as employee_name, e.phone_number, e.employee_code, e.department,
+        d.name as division_name, p.name as position_name
+       FROM attendance a JOIN employees e ON a.employee_id=e.id 
+       LEFT JOIN divisions d ON d.id=e.division_id LEFT JOIN positions p ON p.id=e.position_id
+       WHERE a.company_id=$1 AND a.date=$2 ORDER BY e.name`,
+      [req.user.companyId, date]);
+    res.json({ success: true, data: result.rows, date });
+  } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
 });
 
 module.exports = router;

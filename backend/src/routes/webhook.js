@@ -1,158 +1,138 @@
 const express = require('express');
 const router = express.Router();
+const AttendanceService = require('../services/attendanceService');
+const WhatsAppService = require('../utils/whatsapp');
 const { query } = require('../config/db');
-const { sendWA } = require('../helpers/whatsapp');
 
-function norm(p) {
-  if (!p) return '';
-  let d = String(p).replace(/[^0-9]/g, '');
-  if (d.startsWith('0')) d = '62' + d.substring(1);
-  else if (d.startsWith('8') && d.length >= 9) d = '62' + d;
-  else if (!d.startsWith('62')) d = '62' + d;
-  return d;
-}
-
-// HEALTH
-router.get('/health', async (req, res) => {
-  try {
-    const t = await query("SELECT COUNT(*)::int as c FROM employees WHERE is_active=true");
-    const p = await query("SELECT COUNT(*)::int as c FROM employees WHERE phone_number IS NOT NULL AND phone_number!='' AND is_active=true");
-    const s = await query("SELECT company_id, wa_api_url IS NOT NULL as url, wa_api_token IS NOT NULL as tok FROM company_settings");
-    res.json({ success: true, phone_column: 'phone_number', total: t.rows[0].c, with_phone: p.rows[0].c, wa: s.rows });
-  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+router.get('/', (req, res) => {
+  res.json({ status: 'Absenin Webhook Active', features: ['multi-tenant', 'fonnte-per-tenant', 'overtime', 'selfie', 'gps'] });
 });
 
-// DEBUG
-router.get('/debug-phone/:phone', async (req, res) => {
-  try {
-    const n = norm(req.params.phone);
-    const all = await query(
-      `SELECT id, name, phone_number, company_id FROM employees WHERE is_active=true AND phone_number IS NOT NULL AND phone_number!=''`
-    );
-    res.json({
-      input: req.params.phone, normalized: n,
-      employees: all.rows.map(r => ({
-        ...r, norm: norm(r.phone_number),
-        match: norm(r.phone_number) === n || norm(r.phone_number).slice(-10) === n.slice(-10)
-      }))
-    });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
-
-// FONNTE
-router.post('/fonnte', async (req, res) => {
-  const ts = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' });
-  console.log(`\n[WH][${ts}] ═══ INCOMING ═══`);
-  console.log('[WH] Body:', JSON.stringify(req.body).substring(0, 500));
+// ── Multi-tenant webhook: resolve company from wa_device_number first ──
+router.post('/', async (req, res) => {
+  // Always respond 200 immediately so Fonnte doesn't retry
+  res.status(200).json({ status: 'ok' });
 
   try {
-    const b = req.body || {};
-    const sender = b.sender || b.from || b.phone || '';
-    const message = b.message || b.text || '';
+    let phoneNumber = '', messageText = '', location = null, imageData = null, deviceNumber = null;
 
-    if (!sender || !message) return res.status(200).json({ ok: true });
-    if (b.from_me === true || b.from_me === 'true') return res.status(200).json({ ok: true });
-    if (b.member_group || b.isgroup || String(sender).includes('@g.us')) return res.status(200).json({ ok: true });
+    console.log('📨 Webhook body keys:', Object.keys(req.body));
 
-    const msgLower = String(message).toLowerCase().trim();
-    const normalized = norm(sender);
-    const last10 = normalized.slice(-10);
-    const last9 = normalized.slice(-9);
+    // ====== FONNTE FORMAT ======
+    if (req.body.sender || req.body.pengirim) {
+      phoneNumber = (req.body.sender || req.body.pengirim || '').replace(/[^0-9]/g, '');
+      messageText  = (req.body.message || req.body.pesan || '').trim();
+      // Fonnte sends the receiving device number — used to scope to the right tenant
+      deviceNumber = (req.body.device || req.body.perangkat || '').replace(/[^0-9]/g, '');
 
-    console.log(`[WH] From: "${sender}" → "${normalized}" | Msg: "${msgLower}"`);
-
-    // Find employee using phone_number column
-    const all = await query(
-      `SELECT id, name, phone_number, company_id
-       FROM employees
-       WHERE is_active=true AND phone_number IS NOT NULL AND phone_number!=''`
-    );
-
-    console.log(`[WH] ${all.rows.length} employees with phone_number:`);
-    all.rows.forEach(r => {
-      const rn = norm(r.phone_number);
-      console.log(`[WH]   #${r.id} ${r.name}: "${r.phone_number}" → "${rn}" match=${rn === normalized || rn.slice(-10) === last10 || rn.slice(-9) === last9}`);
-    });
-
-    let emp = null;
-    for (const r of all.rows) {
-      const rn = norm(r.phone_number);
-      if (rn === normalized || rn.slice(-10) === last10 || rn.slice(-9) === last9) {
-        emp = r;
-        console.log(`[WH] ✅ MATCH: ${r.name}`);
-        break;
+      // Image via URL
+      if (req.body.url && (req.body.type === 'image' || req.body.tipe === 'image')) {
+        console.log(`📸 Fonnte image URL: ${req.body.url}`);
+        imageData = await downloadFonnteImage(req.body.url, phoneNumber, deviceNumber);
+        if (!messageText) messageText = 'HADIR';
+      }
+      // Image via base64
+      if (req.body.image && typeof req.body.image === 'string') {
+        imageData = req.body.image;
+        if (!messageText) messageText = 'HADIR';
+      }
+      // Location
+      if (req.body.location) {
+        location = { latitude: parseFloat(req.body.location.latitude), longitude: parseFloat(req.body.location.longitude) };
+        if (!messageText) messageText = 'HADIR';
       }
     }
-
-    if (!emp) {
-      console.log(`[WH] ❌ NO MATCH`);
-      const cs = await query('SELECT company_id FROM company_settings WHERE wa_api_url IS NOT NULL LIMIT 1');
-      if (cs.rows.length) {
-        await sendWA(cs.rows[0].company_id, sender,
-          `❓ Nomor ${sender} belum terdaftar.\n\n📌 Minta admin isi kolom Telepon: ${normalized}\n\n_Absenin_`);
-      }
-      return res.status(200).json({ ok: true, matched: false });
+    // ====== META/CLOUD API FORMAT ======
+    else if (req.body.entry) {
+      const msgs = req.body.entry?.[0]?.changes?.[0]?.value?.messages;
+      if (!msgs?.length) return;
+      const msg = msgs[0];
+      phoneNumber = msg.from;
+      if (msg.type === 'text') messageText = msg.text?.body || '';
+      else if (msg.type === 'image') { messageText = msg.image?.caption || 'HADIR'; }
+      else if (msg.type === 'location') { location = { latitude: msg.location.latitude, longitude: msg.location.longitude }; messageText = 'HADIR'; }
+    }
+    // ====== GENERIC FORMAT ======
+    else {
+      phoneNumber   = (req.body.from || req.body.phone || req.body.sender || '').replace(/[^0-9]/g, '');
+      messageText   = req.body.message || req.body.text || '';
+      deviceNumber  = (req.body.device || '').replace(/[^0-9]/g, '');
+      if (req.body.image) imageData = req.body.image;
+      if (req.body.latitude && req.body.longitude) location = { latitude: parseFloat(req.body.latitude), longitude: parseFloat(req.body.longitude) };
     }
 
-    const cid = emp.company_id;
+    if (!phoneNumber) return;
+    phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
 
-    // COMMANDS
-    if (['status', 'cek', 'info', 'absen', 'hadir'].includes(msgLower)) {
-      const today = new Date().toISOString().split('T')[0];
-      const att = await query('SELECT * FROM attendance WHERE employee_id=$1 AND date=$2', [emp.id, today]);
-      const dateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });
-
-      let reply;
-      if (!att.rows.length || !att.rows[0].check_in) {
-        reply = `📋 *Status Absensi*\n\n👤 ${emp.name}\n📅 ${dateStr}\n\n❌ Belum absen masuk\n\n_Absenin_`;
-      } else {
-        const a = att.rows[0];
-        const inT = new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
-        const outT = a.check_out ? new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) : null;
-        reply = [
-          '📋 *Status Absensi*', '',
-          `👤 ${emp.name}`, `📅 ${dateStr}`, '',
-          `⏰ Masuk: ${inT} WIB`,
-          `⏰ Pulang: ${outT ? outT + ' WIB' : '— (belum)'}`,
-          `📊 ${a.status === 'terlambat' ? '⚠️ Terlambat' : '✅ Hadir'}`,
-          a.overtime_minutes > 0 ? `🕐 Lembur: ${a.overtime_minutes} menit` : '',
-          '', '_Absenin_'
-        ].filter(Boolean).join('\n');
-      }
-      await sendWA(cid, sender, reply);
-
-    } else if (['help', 'bantuan', 'menu', 'hi', 'halo', 'hai'].includes(msgLower)) {
-      await sendWA(cid, sender, `📱 *Halo ${emp.name}!*\n\n💬 Ketik:\n• *status* — Cek absensi\n• *help* — Menu\n\n_Absenin_`);
-
-    } else {
-      await sendWA(cid, sender, `Halo ${emp.name}! 👋\n\nKetik *status* cek absensi\nKetik *help* untuk menu\n\n_Absenin_`);
+    // ── Resolve company via device number (multi-tenant key) ──
+    // If we know which WA device received it, scope employee lookup to that company
+    let forcedCompanyId = null;
+    if (deviceNumber) {
+      const dev = await query(
+        `SELECT company_id FROM company_settings WHERE wa_device_number=$1 OR wa_device_number=$2 LIMIT 1`,
+        [deviceNumber, deviceNumber.startsWith('62') ? '0' + deviceNumber.substring(2) : '62' + deviceNumber]
+      );
+      if (dev.rows.length > 0) forcedCompanyId = dev.rows[0].company_id;
     }
 
-    console.log('[WH] ═══ DONE ═══\n');
-    res.status(200).json({ ok: true, matched: true, name: emp.name });
+    const result = await AttendanceService.processCheckIn(phoneNumber, messageText || '', location, imageData, forcedCompanyId);
+    console.log(`📱 [company:${forcedCompanyId || 'auto'}] ${phoneNumber} → "${messageText}" ${imageData ? '📸' : ''} ${location ? '📍' : ''} → ${result.success ? '✅' : '❌'}`);
 
-  } catch (e) {
-    console.error('[WH] 💥', e.message);
-    res.status(200).json({ ok: true, error: e.message });
+    // Send reply via the tenant's own WA config
+    if (result.reply && result.companyId) {
+      const waService = new WhatsAppService();
+      await waService.sendMessage(phoneNumber, result.reply, result.companyId);
+    }
+  } catch (error) {
+    console.error('❌ Webhook error:', error);
   }
 });
 
-// MIDTRANS
-router.post('/midtrans', async (req, res) => {
+// ── Helper: download Fonnte image using tenant's API token ──
+async function downloadFonnteImage(imageUrl, senderPhone, deviceNumber) {
   try {
-    const { order_id, transaction_status, fraud_status } = req.body || {};
-    if (!order_id) return res.status(200).json({ ok: true });
-    // payments uses: invoice_number (not order_id)
-    const p = await query('SELECT * FROM payments WHERE invoice_number=$1', [order_id]);
-    if (!p.rows.length) return res.status(200).json({ ok: true });
-    const pay = p.rows[0];
-    let ns = pay.status;
-    if (['capture', 'settlement'].includes(transaction_status)) ns = (!fraud_status || fraud_status === 'accept') ? 'paid' : 'fraud';
-    else if (transaction_status === 'pending') ns = 'pending';
-    else if (['deny', 'cancel', 'expire'].includes(transaction_status)) ns = 'failed';
-    await query("UPDATE payments SET status=$1, updated_at=NOW() WHERE id=$2", [ns, pay.id]);
-    res.status(200).json({ ok: true });
-  } catch (e) { console.error('[WH] Midtrans:', e); res.status(200).json({ ok: true }); }
+    // Resolve API token: prefer device-based lookup, fallback to employee-based
+    let apiToken = null;
+
+    if (deviceNumber) {
+      const d = await query(
+        `SELECT wa_api_token FROM company_settings WHERE wa_device_number=$1 OR wa_device_number=$2 LIMIT 1`,
+        [deviceNumber, deviceNumber.startsWith('62') ? '0' + deviceNumber.substring(2) : '62' + deviceNumber]
+      );
+      if (d.rows.length > 0) apiToken = d.rows[0].wa_api_token;
+    }
+
+    if (!apiToken && senderPhone) {
+      const e = await query(`SELECT cs.wa_api_token FROM employees e JOIN company_settings cs ON cs.company_id=e.company_id WHERE e.phone_number=$1 AND e.is_active=true LIMIT 1`, [senderPhone]);
+      if (e.rows.length > 0) apiToken = e.rows[0].wa_api_token;
+    }
+
+    const fetch = require('node-fetch');
+    const headers = apiToken ? { 'Authorization': apiToken } : {};
+    const r = await fetch(imageUrl, { headers, timeout: 30000 });
+    if (r.ok) {
+      const buf = await r.buffer();
+      console.log(`✅ Fonnte image downloaded: ${buf.length} bytes`);
+      return buf;
+    }
+    // Retry without auth
+    const r2 = await fetch(imageUrl, { timeout: 30000 });
+    if (r2.ok) return await r2.buffer();
+    return null;
+  } catch (e) {
+    console.error('❌ Image download error:', e.message);
+    return null;
+  }
+}
+
+// Test endpoint (dev only)
+router.post('/test', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(403).json({ message: 'Not in production' });
+  const { phone, message, image, latitude, longitude, company_id } = req.body;
+  if (!phone) return res.status(400).json({ message: 'phone required' });
+  const loc = latitude && longitude ? { latitude: parseFloat(latitude), longitude: parseFloat(longitude) } : null;
+  const result = await AttendanceService.processCheckIn(phone, message || '', loc, image || null, company_id || null);
+  res.json({ result });
 });
 
 module.exports = router;

@@ -51,10 +51,4 @@ class WhatsAppService {
   }
 }
 
-const wa = { send: sendWA };
-
-async function sendWA(phone, message, companyId) {
-  return wa.sendMessage(phone, message, companyId);
-}
-
-module.exports = { send: sendWA };
+module.exports = new WhatsAppService();
