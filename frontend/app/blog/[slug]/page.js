@@ -2,14 +2,20 @@ import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://absenin.com';
 
 async function getPost(slug) {
   const res = await fetch(`${API_URL}/api/blog/${encodeURIComponent(slug)}`, { cache: 'no-store' });
   if (!res.ok) return null;
   const json = await res.json();
   return json?.data || null;
+}
+
+function toImageUrl(url) {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 function stripHtml(html = '') {
@@ -26,7 +32,7 @@ export async function generateMetadata({ params }) {
   }
 
   const description = (post.excerpt || stripHtml(post.content_html).slice(0, 160)).slice(0, 160);
-  const image = post.feature_image_url ? `${API_URL}${post.feature_image_url}` : undefined;
+  const image = post.feature_image_url ? toImageUrl(post.feature_image_url) : undefined;
 
   return {
     title: `${post.title} - Blog Absenin`,
@@ -62,7 +68,7 @@ export default async function BlogDetailPage({ params }) {
     dateModified: post.updated_at || post.created_at,
     author: { '@type': 'Person', name: post.author_name || 'Tim Absenin' },
     publisher: { '@type': 'Organization', name: 'Absenin' },
-    image: post.feature_image_url ? [`${API_URL}${post.feature_image_url}`] : undefined,
+    image: post.feature_image_url ? [toImageUrl(post.feature_image_url)] : undefined,
     description: post.excerpt || stripHtml(post.content_html).slice(0, 160),
     mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`
   };
@@ -81,7 +87,7 @@ export default async function BlogDetailPage({ params }) {
 
         {post.feature_image_url && (
           <img
-            src={`${API_URL}${post.feature_image_url}`}
+            src={toImageUrl(post.feature_image_url)}
             alt={post.title}
             className="w-full rounded-2xl border mb-8 object-cover"
           />
@@ -96,4 +102,3 @@ export default async function BlogDetailPage({ params }) {
     </main>
   );
 }
-
