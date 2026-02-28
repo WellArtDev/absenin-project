@@ -27,7 +27,7 @@ router.put('/', async (req, res) => {
 
     // Update company_settings
     await query(
-      `UPDATE company_settings SET 
+      `UPDATE company_settings SET
         work_start=COALESCE($1,work_start), work_end=COALESCE($2,work_end),
         late_tolerance_minutes=COALESCE($3,late_tolerance_minutes),
         office_latitude=$4, office_longitude=$5, office_address=$6,
@@ -37,7 +37,7 @@ router.put('/', async (req, res) => {
         overtime_enabled=COALESCE($11,overtime_enabled),
         overtime_min_minutes=COALESCE($12,overtime_min_minutes),
         overtime_max_hours=COALESCE($13,overtime_max_hours),
-        wa_api_url=$14, wa_api_token=CASE WHEN $15 IS NOT NULL AND $15 != '' AND $15 NOT LIKE '%***%' THEN $15 ELSE wa_api_token END,
+        wa_api_url=$14, wa_api_token=CASE WHEN $15::text IS NOT NULL AND $15::text != '' AND $15::text NOT LIKE '%***%' THEN $15::text ELSE wa_api_token END,
         wa_device_number=$16, timezone=COALESCE($17,timezone),
         updated_at=CURRENT_TIMESTAMP WHERE company_id=$18`,
       [work_start, work_end, late_tolerance_minutes, office_latitude || null, office_longitude || null,
