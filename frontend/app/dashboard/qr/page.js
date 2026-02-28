@@ -15,6 +15,7 @@ export default function QRPage() {
   const [selectedQR, setSelectedQR] = useState(null);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [scanBaseUrl, setScanBaseUrl] = useState('');
 
   const [qrForm, setQRForm] = useState({
     shift_id: '',
@@ -25,6 +26,12 @@ export default function QRPage() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setScanBaseUrl(window.location.origin);
+    }
   }, []);
 
   const loadData = async () => {
@@ -103,7 +110,10 @@ export default function QRPage() {
 
   // Generate QR Code URL using public API
   const getQRCodeURL = (code) => {
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(code)}`;
+    const fallback = process.env.NEXT_PUBLIC_APP_URL || '';
+    const base = scanBaseUrl || fallback;
+    const payload = base ? `${base}/scan/${code}` : code;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(payload)}`;
   };
 
   if (loading && qrcodes.length === 0) {
@@ -269,14 +279,14 @@ export default function QRPage() {
                 <span className="text-2xl">3️⃣</span>
                 <div>
                   <h3 className="font-bold">Scan QR Code</h3>
-                  <p className="text-gray-600">Karyawan scan QR Code dengan kamera HP. Sistem akan mencatat waktu scan sebagai bukti absensi.</p>
+                  <p className="text-gray-600">Karyawan scan QR Code dengan kamera HP. QR akan membuka WhatsApp otomatis ke nomor device Fonnte.</p>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-2xl">4️⃣</span>
                 <div>
                   <h3 className="font-bold">Otomatis</h3>
-                  <p className="text-gray-600">Sistem otomatis mencatat check-in berdasarkan scan QR Code. Tidak perlu ketik manual!</p>
+                  <p className="text-gray-600">Pesan "HADIR" otomatis terisi. Tinggal kirim dari WhatsApp, lalu sistem memproses absen otomatis.</p>
                 </div>
               </div>
 

@@ -49,7 +49,7 @@ class SlipService {
     const overtimeResult = await query(`
       SELECT
         COUNT(*) as total_overtime,
-        COALESCE(SUM(duration_hours), 0) as total_hours
+        COALESCE(SUM(COALESCE(duration_minutes, 0)) / 60.0, 0) as total_hours
       FROM overtime
       WHERE employee_id = $1
         AND EXTRACT(MONTH FROM date) = $2
@@ -57,7 +57,10 @@ class SlipService {
         AND status = 'approved'
     `, [employeeId, month, year]);
 
-    const overtime = overtimeResult.rows[0];
+    const overtime = {
+      total_overtime: parseInt(overtimeResult.rows[0]?.total_overtime || 0, 10),
+      total_hours: parseFloat(overtimeResult.rows[0]?.total_hours || 0)
+    };
 
     // Get company info
     const companyResult = await query(`

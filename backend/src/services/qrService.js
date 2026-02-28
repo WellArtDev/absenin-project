@@ -204,12 +204,52 @@ class QRService {
     };
   }
 
+  // Get public WhatsApp target for a QR code
+  async getPublicQRTarget(qrCode) {
+    const result = await query(`
+      SELECT
+        qr.id,
+        qr.code,
+        qr.location_name,
+        qr.is_active,
+        (qr.expires_at IS NULL OR qr.expires_at > CURRENT_TIMESTAMP) as not_expired,
+        cs.wa_device_number
+      FROM qr_codes qr
+      JOIN company_settings cs ON cs.company_id = qr.company_id
+      WHERE qr.code = $1
+      LIMIT 1
+    `, [qrCode]);
+
+    if (result.rows.length === 0) {
+      throw new Error('QR Code tidak ditemukan');
+    }
+
+    const qr = result.rows[0];
+    if (!qr.is_active) {
+      throw new Error('QR Code tidak aktif');
+    }
+    if (!qr.not_expired) {
+      throw new Error('QR Code sudah kadaluarsa');
+    }
+
+    const device = String(qr.wa_device_number || '').replace(/[^0-9]/g, '');
+    if (!device) {
+      throw new Error('Nomor device WhatsApp belum dikonfigurasi');
+    }
+
+    return {
+      code: qr.code,
+      location_name: qr.location_name,
+      wa_device_number: device
+    };
+  }
+
   // Get QR scan logs
   async getScanLogs(qrId, companyId) {
     const result = await query(`
       SELECT qsl.*,
         e.name as employee_name,
-        e.employee_id as employee_code,
+        e.employee_code as employee_code,
         e.phone_number
       FROM qr_scan_logs qsl
       JOIN employees e ON e.id = qsl.employee_id

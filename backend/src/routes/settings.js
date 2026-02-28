@@ -10,9 +10,17 @@ router.get('/', async (req, res) => {
       `SELECT cs.*, c.name as company_name, c.logo_url, c.address as company_address, c.phone as company_phone, c.email as company_email, c.plan, c.max_employees
        FROM company_settings cs JOIN companies c ON c.id=cs.company_id WHERE cs.company_id=$1`, [req.user.companyId]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Settings tidak ditemukan.' });
-    // Mask WA token
     const data = result.rows[0];
-    if (data.wa_api_token) data.wa_api_token = data.wa_api_token.substring(0, 8) + '***';
+
+    // Expose token state explicitly for frontend.
+    data.has_wa_token = Boolean(data.wa_api_token);
+
+    // Mask token for display only.
+    if (data.wa_api_token) {
+      const t = String(data.wa_api_token);
+      data.wa_api_token = t.length > 8 ? `${t.substring(0, 8)}***` : '***';
+    }
+
     res.json({ success: true, data });
   } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
 });

@@ -177,7 +177,7 @@ class ShiftService {
       SELECT
         e.id,
         e.name,
-        e.employee_id,
+        e.employee_code as employee_id,
         es.shift_id,
         s.name as shift_name,
         s.start_time,

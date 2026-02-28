@@ -18,7 +18,11 @@ export default function SettingsPage() {
   const load = async () => {
     try {
       const r = await api.getSettings();
-      setSettings(r.data);
+      const data = r.data || {};
+      setSettings({
+        ...data,
+        has_wa_token: data.has_wa_token ?? Boolean(data.wa_api_token)
+      });
     } catch (e) {
       if (e.message?.includes('Sesi') || e.message?.includes('401')) router.push('/login');
       else setMsg('❌ ' + (e.message || 'Gagal memuat'));
