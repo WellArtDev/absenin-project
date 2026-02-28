@@ -132,6 +132,23 @@ class ApiClient {
   async getEmployeeSlip(employeeId, month, year) { return this.request(`/api/slips/employee/${employeeId}?month=${month}&year=${year}`); }
   async getFullReport(month, year) { return this.request(`/api/slips/report?month=${month}&year=${year}`); }
 
+  // Notifications
+  async getNotificationSettings() { return this.request('/api/notifications/settings'); }
+  async updateNotificationSettings(data) { return this.request('/api/notifications/settings', { method: 'PUT', body: JSON.stringify(data) }); }
+  async getNotificationLogs(filters) { return this.request(`/api/notifications/logs?${new URLSearchParams(filters)}`); }
+  async getNotificationStats() { return this.request('/api/notifications/stats'); }
+  async testNotification(message) { return this.request('/api/notifications/test', { method: 'POST', body: JSON.stringify({ message }) }); }
+
+  // Office Locations
+  async getLocations() { return this.request('/api/locations'); }
+  async getLocation(id) { return this.request(`/api/locations/${id}`); }
+  async createLocation(data) { return this.request('/api/locations', { method: 'POST', body: JSON.stringify(data) }); }
+  async updateLocation(id, data) { return this.request(`/api/locations/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  async deleteLocation(id) { return this.request(`/api/locations/${id}`, { method: 'DELETE' }); }
+  async validateLocation(latitude, longitude) { return this.request('/api/locations/validate', { method: 'POST', body: JSON.stringify({ latitude, longitude }) }); }
+  async getLocationCheckins(id) { return this.request(`/api/locations/${id}/checkins`); }
+  async getLocationStats() { return this.request('/api/locations/stats/summary'); }
+
   async exportCSV(sd, ed) {
     const token = this.getToken();
     const r = await fetch(`${this.baseUrl}/api/reports/export?start_date=${sd}&end_date=${ed}&format=csv`, { headers: { Authorization: `Bearer ${token}` } });
