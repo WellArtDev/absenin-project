@@ -10,7 +10,7 @@ export default function OvertimePage() {
 
   const load = useCallback(async () => {
     try {
-      const r = await api.get('/overtime');
+      const r = await api.getOvertime();
       setRecords(r.data || []);
     } catch (e) { setMsg('❌ ' + e.message); }
     finally { setLoading(false); }
@@ -20,7 +20,12 @@ export default function OvertimePage() {
 
   const handleApprove = async (id, status) => {
     try {
-      await api.put(`/overtime/${id}`, { status });
+      // Use approve/reject methods instead
+      if (status === 'approved') {
+        await api.approveOvertime(id);
+      } else {
+        await api.rejectOvertime(id, '');
+      }
       setMsg(`✅ Lembur ${status === 'approved' ? 'disetujui' : 'ditolak'}!`);
       load();
     } catch (e) { setMsg('❌ ' + e.message); }

@@ -24,6 +24,15 @@ class ApiClient {
     }
   }
 
+  // Generic methods for flexible usage
+  async get(endpoint, params = {}) {
+    const queryString = Object.keys(params).length ? `?${new URLSearchParams(params)}` : '';
+    return this.request(`${endpoint}${queryString}`);
+  }
+  async post(endpoint, data) { return this.request(endpoint, { method: 'POST', body: JSON.stringify(data) }); }
+  async put(endpoint, data) { return this.request(endpoint, { method: 'PUT', body: JSON.stringify(data) }); }
+  async delete(endpoint) { return this.request(endpoint, { method: 'DELETE' }); }
+
   // Auth
   async register(data) { const r = await this.request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }); if (r.success) { this.setToken(r.data.token); this.setUser(r.data.user); } return r; }
   async login(email, pw) { const r = await this.request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password: pw }) }); if (r.success) { this.setToken(r.data.token); this.setUser(r.data.user); } return r; }

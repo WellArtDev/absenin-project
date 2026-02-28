@@ -14,7 +14,11 @@ export default function PaymentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    // Only load data on client-side
+    if (typeof window === 'undefined') return;
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {

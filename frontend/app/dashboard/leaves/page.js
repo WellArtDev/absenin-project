@@ -14,8 +14,8 @@ export default function LeavesPage() {
   const load = useCallback(async () => {
     try {
       const [lr, er] = await Promise.all([
-        api.get('/leaves'),
-        api.get('/employees').catch(() => ({ data: [] })),
+        api.getLeaves(),
+        api.getEmployees().catch(() => ({ data: [] })),
       ]);
       setLeaves(lr.data || []);
       setEmployees(er.data || []);

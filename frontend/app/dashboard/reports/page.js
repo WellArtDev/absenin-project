@@ -12,12 +12,12 @@ export default function ReportsPage() {
     setLoading(true); setMsg(''); setData(null);
     try {
       const fd = new FormData(e.target);
-      const params = new URLSearchParams({
+      const params = {
         start_date: fd.get('report_start'),
         end_date: fd.get('report_end'),
         type: fd.get('report_type'),
-      });
-      const r = await api.get(`/reports?${params}`);
+      };
+      const r = await api.get('/reports', params);
       setData(r.data || r);
       setMsg('✅ Laporan berhasil dibuat!');
     } catch (err) { setMsg('❌ ' + err.message); }

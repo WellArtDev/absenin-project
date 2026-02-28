@@ -9,10 +9,15 @@ export default function LandingPage() {
   const [vis, setVis] = useState(false);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => setVis(true), []);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
+    // Only fetch on client-side
+    if (!mounted) return;
+
     const fetchPlans = async () => {
       try {
         const res = await fetch(`${API_URL}/api/payment/plans`);
@@ -22,12 +27,18 @@ export default function LandingPage() {
         }
       } catch (err) {
         console.error('Failed to fetch plans:', err);
+        // Set default plans on error
+        setPlans([
+          { id: 1, name: 'Gratis', slug: 'free', price: 0, max_employees: 10, duration_days: 0, sort_order: 1, features: ['10 karyawan', 'Selfie & GPS', 'Dashboard admin'] },
+          { id: 2, name: 'Pro', slug: 'pro', price: 99000, max_employees: 50, duration_days: 30, sort_order: 2, features: ['50 karyawan', 'Semua fitur Gratis', 'Manajemen Lembur', 'Manajemen Cuti'] },
+          { id: 3, name: 'Enterprise', slug: 'enterprise', price: 299000, max_employees: 999, duration_days: 30, sort_order: 3, features: ['Karyawan tak terbatas', 'Semua fitur Pro', 'Multi-cabang', 'API Access'] },
+        ]);
       } finally {
         setLoading(false);
       }
     };
     fetchPlans();
-  }, []);
+  }, [mounted]);
 
   return (
     <div className="min-h-screen bg-white">
