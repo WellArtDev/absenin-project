@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const { employee_id, status, type, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
-    let sql = `SELECT l.*, e.name as employee_name, e.phone_number, e.department, u.name as approved_by_name
+    let sql = `SELECT l.*, e.name as employee_name, e.phone_number, u.name as approved_by_name
       FROM leaves l JOIN employees e ON l.employee_id=e.id LEFT JOIN users u ON l.approved_by=u.id WHERE l.company_id=$1`;
     const params = [req.user.companyId]; let pi = 2;
     if (employee_id) { sql += ` AND l.employee_id=$${pi}`; params.push(employee_id); pi++; }

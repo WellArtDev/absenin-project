@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
   try {
     const { start_date, end_date, employee_id, status, type, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
-    let sql = `SELECT o.*, e.name as employee_name, e.phone_number, e.department, e.employee_code, u.name as approved_by_name 
+    let sql = `SELECT o.*, e.name as employee_name, e.phone_number, e.employee_code, u.name as approved_by_name
       FROM overtime o JOIN employees e ON o.employee_id=e.id LEFT JOIN users u ON o.approved_by=u.id WHERE o.company_id=$1`;
     const params = [req.user.companyId]; let pi = 2;
     if (start_date) { sql += ` AND o.date>=$${pi}`; params.push(start_date); pi++; }
@@ -28,7 +28,7 @@ router.get('/summary', async (req, res) => {
     const m = req.query.month || new Date().getMonth() + 1;
     const y = req.query.year || new Date().getFullYear();
     const result = await query(
-      `SELECT e.id, e.name, e.department, e.employee_code, COUNT(o.id) as overtime_days, SUM(COALESCE(o.duration_minutes,0)) as total_minutes,
+      `SELECT e.id, e.name, e.employee_code, COUNT(o.id) as overtime_days, SUM(COALESCE(o.duration_minutes,0)) as total_minutes,
         COUNT(o.id) FILTER (WHERE o.type='auto') as auto_count, COUNT(o.id) FILTER (WHERE o.type='manual') as manual_count,
         COUNT(o.id) FILTER (WHERE o.status='pending') as pending_count, COUNT(o.id) FILTER (WHERE o.status='completed') as completed_count
        FROM employees e LEFT JOIN overtime o ON o.employee_id=e.id AND EXTRACT(MONTH FROM o.date)=$2 AND EXTRACT(YEAR FROM o.date)=$3

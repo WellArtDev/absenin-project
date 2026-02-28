@@ -11,7 +11,7 @@ router.get('/export', async (req, res) => {
     const sd = start_date || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
     const ed = end_date || new Date().toISOString().split('T')[0];
     const result = await query(
-      `SELECT e.employee_code as "ID", e.name as "Nama", e.phone_number as "HP", e.department as "Dept",
+      `SELECT e.employee_code as "ID", e.name as "Nama", e.phone_number as "HP",
               d.name as "Divisi", p.name as "Jabatan", a.date as "Tanggal",
               TO_CHAR(a.check_in,'HH24:MI') as "Masuk", TO_CHAR(a.check_out,'HH24:MI') as "Pulang", a.status as "Status",
               a.location_name as "Lokasi", a.distance_meters as "Jarak(m)",
@@ -40,7 +40,7 @@ router.get('/monthly', async (req, res) => {
     const m = req.query.month || new Date().getMonth() + 1;
     const y = req.query.year || new Date().getFullYear();
     const result = await query(
-      `SELECT e.id, e.name, e.department, e.employee_code, d.name as division_name, p.name as position_name,
+      `SELECT e.id, e.name, e.employee_code, d.name as division_name, p.name as position_name,
         COUNT(*) FILTER (WHERE a.status='HADIR') as hadir, COUNT(*) FILTER (WHERE a.status='TERLAMBAT') as terlambat,
         COUNT(*) FILTER (WHERE a.status='IZIN') as izin, COUNT(*) FILTER (WHERE a.status='SAKIT') as sakit, 
         COUNT(a.id) as total_records,
@@ -61,7 +61,7 @@ router.get('/daily', async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split('T')[0];
     const result = await query(
-      `SELECT a.*, e.name as employee_name, e.phone_number, e.employee_code, e.department,
+      `SELECT a.*, e.name as employee_name, e.phone_number, e.employee_code,
         d.name as division_name, p.name as position_name
        FROM attendance a JOIN employees e ON a.employee_id=e.id 
        LEFT JOIN divisions d ON d.id=e.division_id LEFT JOIN positions p ON p.id=e.position_id

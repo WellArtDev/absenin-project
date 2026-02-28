@@ -39,16 +39,16 @@ router.get('/', async (req, res) => {
     const checkedIn = parseInt(ta.rows[0]?.ci || 0);
     
     const recent = await query(
-      `SELECT a.*, e.name as employee_name, e.phone_number, e.department, e.employee_code,
+      `SELECT a.*, e.name as employee_name, e.phone_number, e.employee_code,
         d.name as division_name
-       FROM attendance a JOIN employees e ON a.employee_id=e.id 
+       FROM attendance a JOIN employees e ON a.employee_id=e.id
        LEFT JOIN divisions d ON d.id=e.division_id
        WHERE a.date=CURRENT_DATE AND a.company_id=$1 ORDER BY a.check_in DESC LIMIT 10`, [cid]);
     
     const notCI = await query(
-      `SELECT e.name, e.phone_number, e.department, e.employee_code, d.name as division_name
+      `SELECT e.name, e.phone_number, e.employee_code, d.name as division_name
        FROM employees e LEFT JOIN divisions d ON d.id=e.division_id
-       WHERE e.is_active=true AND e.company_id=$1 AND e.id NOT IN (SELECT employee_id FROM attendance WHERE date=CURRENT_DATE AND check_in IS NOT NULL) 
+       WHERE e.is_active=true AND e.company_id=$1 AND e.id NOT IN (SELECT employee_id FROM attendance WHERE date=CURRENT_DATE AND check_in IS NOT NULL)
        ORDER BY e.name LIMIT 20`, [cid]);
     
     const ms = await query(
@@ -98,7 +98,7 @@ router.get('/attendance', async (req, res) => {
   try {
     const { start_date, end_date, employee_id, status, page = 1, limit = 50 } = req.query;
     const offset = (page - 1) * limit;
-    let sql = `SELECT a.*, e.name as employee_name, e.phone_number, e.department, e.employee_code,
+    let sql = `SELECT a.*, e.name as employee_name, e.phone_number, e.employee_code,
       d.name as division_name, o.duration_minutes as overtime_duration, o.type as overtime_type, o.status as overtime_status 
       FROM attendance a JOIN employees e ON a.employee_id=e.id 
       LEFT JOIN divisions d ON d.id=e.division_id

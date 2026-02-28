@@ -125,7 +125,6 @@ CREATE TABLE IF NOT EXISTS employees (
     company_id INT REFERENCES companies(id) ON DELETE CASCADE,
     division_id INT REFERENCES divisions(id) ON DELETE SET NULL,
     position_id INT REFERENCES positions(id) ON DELETE SET NULL,
-    department VARCHAR(255),
     employment_status VARCHAR(50) DEFAULT 'tetap' CHECK (employment_status IN ('tetap','kontrak','magang','freelance')),
     start_date DATE,
     end_date DATE,
