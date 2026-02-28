@@ -38,6 +38,7 @@ app.use('/api/overtime', apiLimiter, require('./routes/overtime'));
 app.use('/api/leaves', apiLimiter, require('./routes/leaves'));
 app.use('/api/locations', apiLimiter, require('./routes/locations'));
 app.use('/api/notifications', apiLimiter, require('./routes/notifications'));
+app.use('/api/payroll', apiLimiter, require('./routes/payroll'));
 app.use('/api/selfie', apiLimiter, require('./routes/selfie'));
 app.use('/api/settings', apiLimiter, require('./routes/settings'));
 app.use('/api/broadcast', apiLimiter, require('./routes/broadcast'));

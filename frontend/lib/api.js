@@ -149,6 +149,17 @@ class ApiClient {
   async getLocationCheckins(id) { return this.request(`/api/locations/${id}/checkins`); }
   async getLocationStats() { return this.request('/api/locations/stats/summary'); }
 
+  // Payroll
+  async getPayrollSettings() { return this.request('/api/payroll/settings'); }
+  async updatePayrollSettings(data) { return this.request('/api/payroll/settings', { method: 'PUT', body: JSON.stringify(data) }); }
+  async getPayrollPeriods() { return this.request('/api/payroll/periods'); }
+  async getPayrollPeriod(month, year) { return this.request(`/api/payroll/periods/${month}/${year}`); }
+  async calculatePayroll(month, year) { return this.request(`/api/payroll/periods/${month}/${year}/calculate`, { method: 'POST' }); }
+  async getPayrollRecords(periodId) { return this.request(`/api/payroll/periods/${periodId}/records`); }
+  async updatePayrollRecord(recordId, data) { return this.request(`/api/payroll/records/${recordId}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  async approvePayrollPeriod(periodId) { return this.request(`/api/payroll/periods/${periodId}/approve`, { method: 'PUT' }); }
+  async markPayrollAsPaid(periodId) { return this.request(`/api/payroll/periods/${periodId}/paid`, { method: 'PUT' }); }
+
   async exportCSV(sd, ed) {
     const token = this.getToken();
     const r = await fetch(`${this.baseUrl}/api/reports/export?start_date=${sd}&end_date=${ed}&format=csv`, { headers: { Authorization: `Bearer ${token}` } });

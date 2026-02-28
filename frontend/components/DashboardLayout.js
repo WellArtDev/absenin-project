@@ -38,6 +38,7 @@ export default function DashboardLayout({ children }) {
     { id: 'locations', icon: '📍', label: 'Lokasi', path: '/dashboard/locations' },
     { id: 'broadcast', icon: '📢', label: 'Broadcast', path: '/dashboard/broadcast' },
     { id: 'notifications', icon: '🔔', label: 'Notifikasi', path: '/dashboard/notifications' },
+    { id: 'payroll', icon: '💰', label: 'Payroll', path: '/dashboard/payroll' },
     { id: 'slips', icon: '📄', label: 'Slip Absensi', path: '/dashboard/slips' },
     { id: 'overtime', icon: '⏰', label: 'Lembur', path: '/dashboard/overtime' },
     { id: 'leaves', icon: '🏖️', label: 'Cuti', path: '/dashboard/leaves' },
