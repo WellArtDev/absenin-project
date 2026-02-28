@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
+import DashboardHeader from '@/components/DashboardHeader';
 
 export default function DivisionsPage() {
   const [divisions, setDivisions] = useState([]);
@@ -53,14 +54,15 @@ export default function DivisionsPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">🏢 Divisi</h1>
-          <p className="text-sm text-gray-500">{divisions.length} divisi</p>
+    <>
+      <DashboardHeader
+        title="🏢 Divisi"
+        subtitle={`${divisions.length} divisi`}
+      />
+      <div className="p-4 md:p-6">
+        <div className="flex justify-end mb-6">
+          <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Tambah Divisi</button>
         </div>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-red-600">+ Tambah</button>
-      </div>
 
       {msg && <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}><span>{msg}</span><button onClick={() => setMsg('')}>&times;</button></div>}
 
@@ -81,7 +83,7 @@ export default function DivisionsPage() {
                 <textarea id="div_desc" name="div_desc" defaultValue={editing?.description || ''} rows={3} placeholder="Deskripsi divisi..." className={IC} />
               </div>
               <div className="flex gap-3">
-                <button type="submit" disabled={saving} className="bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50 flex-1">{saving ? '⏳...' : editing ? '💾 Update' : '➕ Tambah'}</button>
+                <button type="submit" disabled={saving} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-wa-dark disabled:opacity-50 flex-1">{saving ? '⏳...' : editing ? '💾 Update' : '➕ Tambah'}</button>
                 <button type="button" onClick={() => setShowForm(false)} className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl text-sm">Batal</button>
               </div>
             </form>
@@ -108,6 +110,6 @@ export default function DivisionsPage() {
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 }

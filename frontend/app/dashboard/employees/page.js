@@ -3,12 +3,26 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import DashboardHeader from '@/components/DashboardHeader';
 
+const DetailRow = ({ label, value, capitalize = false, highlight = false }) => {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-3 py-2">
+      <span className="text-xs text-gray-500 font-medium w-32 flex-shrink-0">{label}</span>
+      <span className={`text-sm font-medium ${highlight ? 'text-wa-primary' : 'text-gray-900'} ${capitalize ? 'capitalize' : ''}`}>
+        {value}
+      </span>
+    </div>
+  );
+};
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
@@ -140,6 +154,7 @@ export default function EmployeesPage() {
   };
 
   const handleEdit = (emp) => { setEditing(emp); setShowForm(true); };
+  const handleView = (emp) => { setSelectedEmployee(emp); setShowDetail(true); };
 
   const filtered = employees.filter(e =>
     e.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -284,6 +299,67 @@ export default function EmployeesPage() {
         </div>
       )}
 
+      {/* Detail Modal */}
+      {showDetail && selectedEmployee && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setShowDetail(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-wa-light rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-wa-dark">{selectedEmployee.name?.charAt(0) || 'E'}</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{selectedEmployee.name}</h2>
+                  <p className="text-sm text-gray-500">{selectedEmployee.employee_id || 'No Employee ID'}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowDetail(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Informasi Pekerjaan */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 mb-4 pb-2 border-b flex items-center gap-2">
+                  💼 Informasi Pekerjaan
+                </h3>
+                <div className="space-y-3">
+                  <DetailRow label="Employee ID" value={selectedEmployee.employee_id} />
+                  <DetailRow label="Email Perusahaan" value={selectedEmployee.email} />
+                  <DetailRow label="No. WhatsApp" value={selectedEmployee.phone} highlight />
+                  <DetailRow label="Divisi" value={selectedEmployee.division_name} />
+                  <DetailRow label="Jabatan" value={selectedEmployee.position_name} />
+                  <DetailRow label="Tanggal Mulai" value={selectedEmployee.join_date?.split('T')[0]} />
+                  <DetailRow label="Status" value={selectedEmployee.employment_status} capitalize />
+                  <DetailRow label="Gaji Pokok" value={selectedEmployee.base_salary ? `Rp${Number(selectedEmployee.base_salary).toLocaleString('id-ID')}` : null} />
+                </div>
+              </div>
+
+              {/* Informasi Pribadi */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 mb-4 pb-2 border-b flex items-center gap-2">
+                  👤 Informasi Pribadi
+                </h3>
+                <div className="space-y-3">
+                  <DetailRow label="Nomor KTP" value={selectedEmployee.ktp_number} />
+                  <DetailRow label="Tanggal Lahir" value={selectedEmployee.date_of_birth?.split('T')[0]} />
+                  <DetailRow label="Email Pribadi" value={selectedEmployee.personal_email} />
+                  <DetailRow label="NPWP" value={selectedEmployee.npwp} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8 pt-6 border-t">
+              <button onClick={() => { setShowDetail(false); handleEdit(selectedEmployee); }} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark flex-1">
+                ✏️ Edit Karyawan
+              </button>
+              <button onClick={() => setShowDetail(false)} className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl text-sm font-semibold">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-2xl border overflow-hidden">
         <div className="overflow-x-auto">
@@ -318,7 +394,8 @@ export default function EmployeesPage() {
                   <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{emp.division_name || '-'}</td>
                   <td className="px-4 py-3 text-gray-500 hidden lg:table-cell">{emp.position_name || '-'}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => handleEdit(emp)} className="text-blue-500 hover:text-blue-700 text-xs mr-3">✏️ Edit</button>
+                    <button onClick={() => handleView(emp)} className="text-wa-primary hover:text-wa-dark text-xs mr-2">👁️ Lihat</button>
+                    <button onClick={() => handleEdit(emp)} className="text-blue-500 hover:text-blue-700 text-xs mr-2">✏️ Edit</button>
                     <button onClick={() => handleDelete(emp)} className="text-red-400 hover:text-red-600 text-xs">🗑️</button>
                   </td>
                 </tr>
