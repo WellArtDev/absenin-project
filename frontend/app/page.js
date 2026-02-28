@@ -51,6 +51,7 @@ export default function LandingPage() {
               <span className="text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full font-medium">v3</span>
             </div>
             <div className="flex items-center gap-3">
+              <Link href="/blog" className="text-sm font-medium text-gray-700 px-4 py-2 hover:text-brand-600">Blog</Link>
               <Link href="/login" className="text-sm font-medium text-gray-700 px-4 py-2">Masuk</Link>
               <Link href="/register" className="text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 px-5 py-2.5 rounded-lg shadow-sm">Mulai Gratis</Link>
             </div>
@@ -68,7 +69,7 @@ export default function LandingPage() {
           </div>
           <div style={{display:'flex',gap:28,alignItems:'center'}}>
             <div style={{display:'flex',gap:24}} className="hidden md:flex">
-              {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ']].map(([h,l])=>(
+              {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ'],['/blog','Blog']].map(([h,l])=>(
                 <a key={h} href={h} style={{fontSize:14,fontWeight:600,color:'#64748b',textDecoration:'none',transition:'color .15s'}} onMouseOver={e=>e.target.style.color='#25D366'} onMouseOut={e=>e.target.style.color='#64748b'}>{l}</a>
               ))}
             </div>
