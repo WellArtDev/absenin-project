@@ -47,6 +47,7 @@ export default function SuperadminPage() {
   const [blogForm, setBlogForm] = useState({
     title: '',
     slug: '',
+    category: '',
     excerpt: '',
     content_html: '',
     feature_image_url: '',
@@ -190,6 +191,7 @@ export default function SuperadminPage() {
     setBlogForm({
       title: '',
       slug: '',
+      category: '',
       excerpt: '',
       content_html: '',
       feature_image_url: '',
@@ -204,6 +206,7 @@ export default function SuperadminPage() {
       setBlogForm({
         title: post.title || '',
         slug: post.slug || '',
+        category: post.category || '',
         excerpt: post.excerpt || '',
         content_html: post.content_html || '',
         feature_image_url: post.feature_image_url || '',
@@ -214,6 +217,7 @@ export default function SuperadminPage() {
       setBlogForm({
         title: '',
         slug: '',
+        category: '',
         excerpt: '',
         content_html: '',
         feature_image_url: '',
@@ -527,7 +531,7 @@ export default function SuperadminPage() {
                   <button type="button" onClick={resetBlogForm} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Judul Artikel *</label>
                     <input
@@ -545,6 +549,15 @@ export default function SuperadminPage() {
                       onChange={(e) => setBlogForm({ ...blogForm, slug: e.target.value })}
                       className="w-full px-3 py-2.5 rounded-xl border text-sm"
                       placeholder="auto jika kosong"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Kategori</label>
+                    <input
+                      value={blogForm.category}
+                      onChange={(e) => setBlogForm({ ...blogForm, category: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl border text-sm"
+                      placeholder="Contoh: HR, Payroll, Product Update"
                     />
                   </div>
                 </div>
@@ -688,6 +701,7 @@ export default function SuperadminPage() {
                   <thead>
                     <tr className="bg-gray-50 border-b">
                       <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Artikel</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Kategori</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Slug</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Update</th>
@@ -700,6 +714,11 @@ export default function SuperadminPage() {
                         <td className="px-6 py-4">
                           <p className="text-sm font-medium">{post.title}</p>
                           <p className="text-xs text-gray-500">{post.excerpt || '-'}</p>
+                        </td>
+                        <td className="px-4 py-4 text-xs">
+                          {post.category ? (
+                            <span className="px-2 py-1 rounded-full bg-wa-light text-wa-dark font-semibold">{post.category}</span>
+                          ) : '-'}
                         </td>
                         <td className="px-4 py-4 text-xs font-mono">{post.slug}</td>
                         <td className="px-4 py-4 text-center">

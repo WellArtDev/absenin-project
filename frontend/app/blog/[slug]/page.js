@@ -34,6 +34,14 @@ function stripHtml(html = '') {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+function normalizeContentHtml(html = '') {
+  return String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/\sstyle=(['"]).*?\1/gi, '')
+    .replace(/\sclass=(['"]).*?\1/gi, '');
+}
+
 export async function generateMetadata({ params }) {
   const post = await getPost(params.slug);
   if (!post) {
@@ -72,6 +80,10 @@ export default async function BlogDetailPage({ params }) {
   const post = await getPost(params.slug);
   if (!post) notFound();
   const recentPosts = (await getRecentPosts()).filter((item) => item.slug !== post.slug).slice(0, 5);
+  const normalizedContent = normalizeContentHtml(post.content_html || '');
+  const shareUrl = `${SITE_URL}/blog/${post.slug}`;
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedTitle = encodeURIComponent(post.title);
 
   const articleLd = {
     '@context': 'https://schema.org',
@@ -124,7 +136,7 @@ export default async function BlogDetailPage({ params }) {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
             <div className="relative z-10 px-6 md:px-12 py-10 md:py-16 min-h-[320px] md:min-h-[520px] flex flex-col justify-end">
-              <p className="text-xs uppercase tracking-[0.2em] text-[#9ff7c4] font-bold">Blog</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#9ff7c4] font-bold">{post.category || 'Blog'}</p>
               <h1 className="text-3xl md:text-6xl font-black leading-tight mt-3 text-white max-w-5xl">{post.title}</h1>
               <p className="text-sm text-white/85 mt-4">
                 {new Date(post.published_at || post.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' })}
@@ -141,9 +153,18 @@ export default async function BlogDetailPage({ params }) {
                 <p className="text-xl md:text-2xl leading-9 text-[#075E54] font-medium">{post.excerpt}</p>
               </div>
             )}
+            <div className="bg-white border border-gray-200 p-4 md:p-5">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center px-4 py-2 bg-[#4f46e5] text-white font-bold text-sm uppercase tracking-wide">Share</span>
+                <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-full bg-[#7e8aa3] text-white text-sm font-semibold hover:bg-[#6b7690]">Facebook</a>
+                <a href={`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-full bg-[#7e8aa3] text-white text-sm font-semibold hover:bg-[#6b7690]">Twitter</a>
+                <a href={`https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedTitle}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-full bg-[#7e8aa3] text-white text-sm font-semibold hover:bg-[#6b7690]">Pinterest</a>
+                <a href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${post.title} - ${shareUrl}`)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-4 py-2 rounded-full bg-[#7e8aa3] text-white text-sm font-semibold hover:bg-[#6b7690]">WhatsApp</a>
+              </div>
+            </div>
             <div
-              className="prose prose-gray max-w-none bg-white border border-gray-200 p-6 md:p-10 prose-headings:text-[#075E54] prose-a:text-[#128C7E]"
-              dangerouslySetInnerHTML={{ __html: post.content_html }}
+              className="prose prose-gray max-w-none bg-white border border-gray-200 p-6 md:p-10 prose-headings:text-[#075E54] prose-a:text-[#128C7E] [&_*]:max-w-full [&_*]:whitespace-normal [&_*]:break-words [&_img]:h-auto [&_img]:my-6 [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
+              dangerouslySetInnerHTML={{ __html: normalizedContent }}
             />
           </div>
 

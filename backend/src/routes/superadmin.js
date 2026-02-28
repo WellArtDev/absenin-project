@@ -34,6 +34,7 @@ const ensureBlogTables = async () => {
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       slug VARCHAR(255) UNIQUE NOT NULL,
+      category VARCHAR(100),
       excerpt TEXT,
       content_html TEXT NOT NULL,
       feature_image_url TEXT,
@@ -45,8 +46,10 @@ const ensureBlogTables = async () => {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS category VARCHAR(100)`);
   await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_status_created_at ON blog_posts(status, created_at DESC)');
   await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)');
+  await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts(category)');
 };
 
 const toSlug = (text = '') => String(text)
@@ -267,7 +270,7 @@ router.get('/blog/posts', async (req, res) => {
       params.push(status);
     }
     if (search) {
-      sql += ` AND (bp.title ILIKE $${pi} OR bp.excerpt ILIKE $${pi} OR bp.content_html ILIKE $${pi})`;
+      sql += ` AND (bp.title ILIKE $${pi} OR bp.excerpt ILIKE $${pi} OR bp.content_html ILIKE $${pi} OR bp.category ILIKE $${pi})`;
       params.push(`%${search}%`);
       pi += 1;
     }
@@ -315,7 +318,7 @@ router.post('/blog/upload-image', (req, res) => {
 router.post('/blog/posts', async (req, res) => {
   try {
     await ensureBlogTables();
-    const { title, slug, excerpt, content_html, feature_image_url, status } = req.body;
+    const { title, slug, category, excerpt, content_html, feature_image_url, status } = req.body;
     if (!title || !content_html) {
       return res.status(400).json({ success: false, message: 'Title dan konten wajib diisi.' });
     }
@@ -327,13 +330,14 @@ router.post('/blog/posts', async (req, res) => {
 
     const result = await query(`
       INSERT INTO blog_posts (
-        title, slug, excerpt, content_html, feature_image_url, status, published_at, created_by, updated_by
+        title, slug, category, excerpt, content_html, feature_image_url, status, published_at, created_by, updated_by
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
       RETURNING *
     `, [
       title,
       finalSlug,
+      category || null,
       excerpt || null,
       content_html,
       feature_image_url || null,
@@ -352,7 +356,7 @@ router.post('/blog/posts', async (req, res) => {
 router.put('/blog/posts/:id', async (req, res) => {
   try {
     await ensureBlogTables();
-    const { title, slug, excerpt, content_html, feature_image_url, status } = req.body;
+    const { title, slug, category, excerpt, content_html, feature_image_url, status } = req.body;
     const existing = await query('SELECT * FROM blog_posts WHERE id = $1', [req.params.id]);
     if (existing.rows.length === 0) return res.status(404).json({ success: false, message: 'Post tidak ditemukan.' });
 
@@ -369,18 +373,20 @@ router.put('/blog/posts/:id', async (req, res) => {
       SET
         title = COALESCE($1, title),
         slug = $2,
-        excerpt = $3,
-        content_html = COALESCE($4, content_html),
-        feature_image_url = $5,
-        status = $6,
-        published_at = $7,
-        updated_by = $8,
+        category = $3,
+        excerpt = $4,
+        content_html = COALESCE($5, content_html),
+        feature_image_url = $6,
+        status = $7,
+        published_at = $8,
+        updated_by = $9,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9
+      WHERE id = $10
       RETURNING *
     `, [
       title || null,
       finalSlug,
+      category || null,
       excerpt || null,
       content_html || null,
       feature_image_url || null,

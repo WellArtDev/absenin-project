@@ -97,8 +97,14 @@ export default async function BlogPage() {
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                   <div className="relative z-10 p-6 md:p-10 flex flex-col justify-end min-h-[420px] text-white">
-                    <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#9ff7c4]">Featured Story</p>
-                    <h2 className="text-3xl md:text-5xl font-black leading-tight mt-3 max-w-3xl">{featured.title}</h2>
+                    <p className="text-xs uppercase tracking-[0.2em] font-bold text-[#9ff7c4]">
+                      {featured.category || 'Featured Story'}
+                    </p>
+                    <h2 className="text-3xl md:text-5xl font-black leading-tight mt-3 max-w-3xl">
+                      <Link href={`/blog/${featured.slug}`} className="hover:underline">
+                        {featured.title}
+                      </Link>
+                    </h2>
                     <p className="text-sm text-white/85 mt-4">{formatDate(featured.published_at || featured.created_at)}</p>
                     <Link href={`/blog/${featured.slug}`} className="inline-flex mt-6 bg-[#25D366] hover:bg-[#128C7E] text-white px-5 py-3 text-sm font-bold uppercase tracking-wide w-fit">
                       Baca Artikel
@@ -120,8 +126,12 @@ export default async function BlogPage() {
                         )}
                       </div>
                       <div>
-                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#128C7E] font-bold">Blog</p>
-                        <h3 className="text-2xl font-extrabold leading-tight mt-2 text-[#075E54]">{post.title}</h3>
+                        <p className="text-[11px] uppercase tracking-[0.2em] text-[#128C7E] font-bold">{post.category || 'Blog'}</p>
+                        <h3 className="text-2xl font-extrabold leading-tight mt-2 text-[#075E54]">
+                          <Link href={`/blog/${post.slug}`} className="hover:underline">
+                            {post.title}
+                          </Link>
+                        </h3>
                         <p className="text-gray-500 text-sm mt-2">{formatDate(post.published_at || post.created_at)}</p>
                         <p className="text-gray-700 mt-4 leading-7">{plainExcerpt(post)}</p>
                         <Link href={`/blog/${post.slug}`} className="inline-flex mt-4 bg-[#1f1f27] hover:bg-black text-white px-4 py-2 text-sm font-semibold">

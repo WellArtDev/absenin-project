@@ -8,6 +8,7 @@ const ensureBlogTables = async () => {
       id SERIAL PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
       slug VARCHAR(255) UNIQUE NOT NULL,
+      category VARCHAR(100),
       excerpt TEXT,
       content_html TEXT NOT NULL,
       feature_image_url TEXT,
@@ -19,8 +20,10 @@ const ensureBlogTables = async () => {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS category VARCHAR(100)`);
   await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_status_published_at ON blog_posts(status, published_at DESC)');
   await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_slug_public ON blog_posts(slug)');
+  await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_category_public ON blog_posts(category)');
 };
 
 // Public list of published posts
@@ -36,7 +39,7 @@ router.get('/', async (req, res) => {
     let pi = 1;
     let where = `WHERE bp.status = 'published'`;
     if (search) {
-      where += ` AND (bp.title ILIKE $${pi} OR bp.excerpt ILIKE $${pi})`;
+      where += ` AND (bp.title ILIKE $${pi} OR bp.excerpt ILIKE $${pi} OR bp.category ILIKE $${pi})`;
       params.push(`%${search}%`);
       pi += 1;
     }
@@ -46,6 +49,7 @@ router.get('/', async (req, res) => {
         bp.id,
         bp.title,
         bp.slug,
+        bp.category,
         bp.excerpt,
         bp.feature_image_url,
         bp.published_at,
@@ -86,6 +90,7 @@ router.get('/:slug', async (req, res) => {
         bp.id,
         bp.title,
         bp.slug,
+        bp.category,
         bp.excerpt,
         bp.content_html,
         bp.feature_image_url,
@@ -112,4 +117,3 @@ router.get('/:slug', async (req, res) => {
 });
 
 module.exports = router;
-

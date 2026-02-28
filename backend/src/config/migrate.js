@@ -129,6 +129,23 @@ const MIGRATIONS = [
     },
   },
 
+  // ── v3.1.4 ── Kategori artikel blog
+  {
+    version: 'v3.1.4_add_blog_category',
+    description: 'Tambah kolom category di blog_posts + index category',
+    up: async (client) => {
+      await client.query(`
+        ALTER TABLE blog_posts
+        ADD COLUMN IF NOT EXISTS category VARCHAR(100)
+      `);
+
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_category_public
+        ON blog_posts(category)
+      `);
+    },
+  },
+
   // ════════════════════════════════════════════════════════════════════
   // ↓ TAMBAHKAN MIGRATION BARU DI SINI
   //
