@@ -404,6 +404,7 @@ export default function EmployeesPage() {
           </table>
         </div>
       </div>
+    </div>
     </>
   );
 }

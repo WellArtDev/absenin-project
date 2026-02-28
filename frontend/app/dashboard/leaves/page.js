@@ -169,6 +169,7 @@ export default function LeavesPage() {
           </table>
         </div>
       </div>
+    </div>
     </>
   );
 }
