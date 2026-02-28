@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
 const DetailRow = ({ label, value, capitalize = false, highlight = false }) => {
@@ -15,6 +16,7 @@ const DetailRow = ({ label, value, capitalize = false, highlight = false }) => {
 };
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const [employees, setEmployees] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -405,6 +407,7 @@ export default function EmployeesPage() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );

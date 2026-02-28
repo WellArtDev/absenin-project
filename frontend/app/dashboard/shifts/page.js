@@ -479,7 +479,6 @@ export default function ShiftsPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }
