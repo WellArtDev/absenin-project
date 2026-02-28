@@ -117,12 +117,14 @@ export default function QRPage() {
   const IC = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-wa-primary/20 focus:border-wa-primary bg-white";
 
   return (
-    <>
-      <DashboardHeader
-        title="📱 QR Code Absensi"
-        subtitle={`${qrcodes.filter(q => q.is_active).length} QR aktif`}
-      />
-      <div className="p-4 md:p-6 max-w-6xl mx-auto">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">📱 QR Code Absensi</h1>
+          <p className="text-sm text-gray-500 mt-1">{qrcodes.filter(q => q.is_active).length} QR aktif</p>
+        </div>
+      </div>
 
         {msg && (
           <div className={`px-4 py-3 rounded-xl text-sm mb-6 flex justify-between ${
@@ -422,6 +424,5 @@ export default function QRPage() {
         )}
       </div>
     </div>
-    </>
   );
 }

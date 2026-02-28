@@ -66,12 +66,14 @@ export default function LeavesPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <>
-      <DashboardHeader
-        title="📅 Cuti / Izin"
-        subtitle={`${leaves.length} pengajuan`}
-      />
-      <div className="p-4 md:p-6">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">📅 Cuti / Izin</h1>
+          <p className="text-sm text-gray-500 mt-1">{leaves.length} pengajuan</p>
+        </div>
+      </div>
         <div className="flex justify-end mb-6">
           <button onClick={() => setShowForm(true)} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Ajukan Cuti</button>
         </div>
@@ -169,6 +171,5 @@ export default function LeavesPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }

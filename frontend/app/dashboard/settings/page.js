@@ -124,12 +124,14 @@ export default function SettingsPage() {
   const inputCls = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white";
 
   return (
-    <>
-      <DashboardHeader
-        title="⚙️ Pengaturan"
-        subtitle={`${settings.company_name} — ${settings.plan}`}
-      />
-      <div className="p-4 md:p-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">⚙️ Pengaturan</h1>
+          <p className="text-sm text-gray-500 mt-1">{settings.company_name} — {settings.plan}</p>
+        </div>
+      </div>
 
       {msg && (
         <div className={`px-4 py-3 rounded-xl text-sm mb-6 flex items-center justify-between ${
@@ -393,6 +395,5 @@ export default function SettingsPage() {
         </div>
       </form>
     </div>
-    </>
   );
 }

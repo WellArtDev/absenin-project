@@ -441,7 +441,7 @@ export default function PayrollPage() {
               <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
                 <li>Pilih periode (bulan & tahun)</li>
                 <li>Klik "Hitung Payroll" untuk menghitung semua gaji karyawan</li>
-li>System otomatis menghitung berdasarkan: gaji pokok + lembur - potongan terlambat/alpha</li>
+                <li>System otomatis menghitung berdasarkan: gaji pokok + lembur - potongan terlambat/alpha</li>
                 <li>Review dan edit jika diperlukan</li>
                 <li>Export untuk pembayaran</li>
               </ol>

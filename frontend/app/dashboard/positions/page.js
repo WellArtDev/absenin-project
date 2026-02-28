@@ -53,15 +53,17 @@ export default function PositionsPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <>
-      <DashboardHeader
-        title="💼 Jabatan"
-        subtitle={`${positions.length} jabatan`}
-      />
-      <div className="p-4 md:p-6">
-        <div className="flex justify-end mb-6">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">💼 Jabatan</h1>
+          <p className="text-sm text-gray-500 mt-1">{positions.length} jabatan</p>
+        </div>
+        <div>
           <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Tambah Jabatan</button>
         </div>
+      </div>
 
       {msg && <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}><span>{msg}</span><button onClick={() => setMsg('')}>&times;</button></div>}
 
@@ -115,6 +117,5 @@ export default function PositionsPage() {
         ))}
       </div>
     </div>
-    </>
   );
 }

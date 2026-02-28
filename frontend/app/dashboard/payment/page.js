@@ -123,12 +123,14 @@ export default function PaymentPage() {
   }
 
   return (
-    <>
-      <DashboardHeader
-        title="💰 Paket Berlangganan"
-        subtitle="Pilih paket yang sesuai dengan kebutuhan perusahaan Anda"
-      />
-      <div className="p-4 md:p-6 max-w-6xl mx-auto">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">💰 Paket Berlangganan</h1>
+          <p className="text-sm text-gray-500 mt-1">Pilih paket yang sesuai dengan kebutuhan perusahaan Anda</p>
+        </div>
+      </div>
 
       {msg && (
         <div className={`px-4 py-3 rounded-xl text-sm mb-6 flex items-center justify-between ${
@@ -313,6 +315,5 @@ export default function PaymentPage() {
         </div>
       )}
     </div>
-    </>
   );
 }

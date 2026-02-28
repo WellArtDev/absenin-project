@@ -27,9 +27,13 @@ export default function ReportsPage() {
   const IC = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500";
 
   return (
-    <>
-      <DashboardHeader title="📊 Laporan" />
-      <div className="p-4 md:p-6">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">📊 Laporan</h1>
+        </div>
+      </div>
 
       {msg && <div className={`px-4 py-3 rounded-xl text-sm mb-4 ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{msg}</div>}
 
@@ -87,6 +91,5 @@ export default function ReportsPage() {
         </div>
       )}
     </div>
-    </>
   );
 }

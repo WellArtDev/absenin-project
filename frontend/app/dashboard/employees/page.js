@@ -166,11 +166,14 @@ export default function EmployeesPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <>
-      <DashboardHeader
-        title="👥 Karyawan"
-        subtitle={`${employees.length} karyawan terdaftar`}
-      />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">👥 Karyawan</h1>
+          <p className="text-sm text-gray-500 mt-1">{employees.length} karyawan terdaftar</p>
+        </div>
+      </div>
       <div className="p-4 md:p-6">
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-end gap-3 mb-6">
@@ -404,6 +407,5 @@ export default function EmployeesPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }
