@@ -1,7 +1,18 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import api from '@/lib/api';
+
+// Dynamic import for AttendanceMap to avoid SSR issues with Leaflet
+const AttendanceMap = dynamic(() => import('@/components/AttendanceMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-gray-100 rounded-2xl h-96 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+    </div>
+  ),
+});
 
 // ── Utility components (defined OUTSIDE the page component so React never remounts them) ──
 const InputField = ({ label, required, ...props }) => (
@@ -56,6 +67,7 @@ export default function DashboardPage() {
   // Data states
   const [attData, setAttData] = useState([]);
   const [attLoading, setAttLoading] = useState(false);
+  const [selectedAttendanceId, setSelectedAttendanceId] = useState(null);  // For map highlighting
   const [rMonth, setRMonth] = useState(new Date().getMonth() + 1);
   const [rYear, setRYear] = useState(new Date().getFullYear());
   const [mReport, setMReport] = useState([]);
@@ -569,6 +581,13 @@ export default function DashboardPage() {
         {/* ======== ATTENDANCE ======== */}
         {tab === 'attendance' && (
           <div className="space-y-6 animate-fade-in">
+            {/* Peta Absensi */}
+            <AttendanceMap
+              attendanceData={attData}
+              selectedId={selectedAttendanceId}
+              onMarkerClick={(attendance) => setSelectedAttendanceId(attendance.id)}
+            />
+
             <div className="flex items-center justify-between"><div><h2 className="text-2xl font-bold">📅 Absensi Hari Ini</h2><p className="text-gray-600 text-sm mt-1">{todayStr}</p></div><button onClick={loadAtt} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl text-sm hover:bg-gray-200">🔄 Refresh</button></div>
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               {attLoading ? <Spinner /> : attData.length > 0 ? (
@@ -587,7 +606,23 @@ export default function DashboardPage() {
                     <td className="px-4 py-4 text-center text-sm">{a.check_out ? new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                     <td className="px-4 py-4 text-center"><Badge status={a.status} /></td>
                     <td className="px-4 py-4 text-center hidden md:table-cell">{a.selfie_checkin_url ? <a href={a.selfie_checkin_url} target="_blank" rel="noopener" className="text-brand-500 text-xs underline">📸 Lihat</a> : <span className="text-gray-400 text-xs">—</span>}</td>
-                    <td className="px-4 py-4 text-center hidden lg:table-cell">{a.location_name ? <span className="text-xs text-gray-600 max-w-[150px] truncate block" title={a.location_name}>📍 {a.location_name}</span> : <span className="text-gray-400 text-xs">—</span>}</td>
+                    <td className="px-4 py-4 text-center hidden lg:table-cell">
+                      {a.latitude && a.longitude ? (
+                        <button
+                          onClick={() => setSelectedAttendanceId(a.id)}
+                          className={`text-xs truncate block max-w-[150px] mx-auto transition-colors ${
+                            selectedAttendanceId === a.id
+                              ? 'text-red-600 font-semibold bg-red-50 px-2 py-1 rounded-lg'
+                              : 'text-brand-500 hover:text-brand-700 hover:bg-brand-50 px-2 py-1 rounded-lg'
+                          }`}
+                          title={a.location_name || 'Lokasi tersedia'}
+                        >
+                          📍 {a.location_name || 'Lihat Lokasi'}
+                        </button>
+                      ) : (
+                        <span className="text-gray-400 text-xs">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-4 text-center">{(a.overtime_minutes || 0) > 0 ? <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">{Math.floor(a.overtime_minutes / 60)}j{a.overtime_minutes % 60}m</span> : <span className="text-gray-400 text-xs">—</span>}</td>
                   </tr>
                 ))}</tbody></table></div>
