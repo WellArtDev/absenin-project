@@ -34,7 +34,7 @@ router.post('/', async (req, res) => {
     // ─── Parse Fonnte Format ───
     // Fonnte sends: { sender, message, url, type, device, location, image }
     const sender = req.body.sender || req.body.pengirim;
-    const message = req.body.message || req.body.pesan || '';
+    let message = req.body.message || req.body.pesan || '';  // Use 'let' so we can modify it
     const imageUrl = req.body.url;
     const messageType = req.body.type || req.body.tipe;
     const deviceNumber = req.body.device || req.body.perangkat;
