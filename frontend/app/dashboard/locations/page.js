@@ -143,8 +143,8 @@ export default function LocationsPage() {
     setForm({
       name: location.name,
       address: location.address || '',
-      latitude: location.latitude.toString(),
-      longitude: location.longitude.toString(),
+      latitude: location.latitude !== null && location.latitude !== undefined ? String(location.latitude) : '',
+      longitude: location.longitude !== null && location.longitude !== undefined ? String(location.longitude) : '',
       radius_meters: location.radius_meters,
       sort_order: location.sort_order || 0
     });
@@ -205,23 +205,38 @@ export default function LocationsPage() {
     );
   }
 
-  const IC = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-wa-primary/20 focus:border-wa-primary bg-white";
+  const IC = "input-wa";
+  const toNumber = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  };
+  const formatCoord = (value) => {
+    const num = toNumber(value);
+    return num === null ? '-' : num.toFixed(4);
+  };
+  const getMapsHref = (latitude, longitude) => {
+    const lat = toNumber(latitude);
+    const lng = toNumber(longitude);
+    if (lat === null || lng === null) return null;
+    return `https://www.google.com/maps?q=${lat},${lng}`;
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📍 Lokasi Kantor</h1>
-          <p className="text-sm text-gray-500 mt-1">{stats?.active_locations || 0} lokasi aktif</p>
+          <h1 className="page-title">📍 Lokasi Kantor</h1>
+          <p className="page-subtitle">{stats?.active_locations || 0} lokasi aktif</p>
         </div>
       </div>
 
         {msg && (
-          <div className={`px-4 py-3 rounded-xl text-sm mb-6 flex justify-between ${
+          <div className={`mb-6 flex justify-between ${
             msg.startsWith('✅')
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
+              ? 'alert-success'
+              : 'alert-danger'
           }`}>
             <span>{msg}</span>
             <button onClick={() => setMsg('')} className="ml-2 opacity-50 hover:opacity-100 text-lg">&times;</button>
@@ -231,15 +246,15 @@ export default function LocationsPage() {
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl border p-4">
+            <div className="stat-tile">
               <p className="text-2xl font-bold text-wa-primary">{stats.total_locations || 0}</p>
               <p className="text-xs text-gray-500">Total Lokasi</p>
             </div>
-            <div className="bg-white rounded-xl border p-4">
+            <div className="stat-tile">
               <p className="text-2xl font-bold text-green-600">{stats.active_locations || 0}</p>
               <p className="text-xs text-gray-500">Lokasi Aktif</p>
             </div>
-            <div className="bg-white rounded-xl border p-4">
+            <div className="stat-tile">
               <p className="text-2xl font-bold">{stats.total_checkins || 0}</p>
               <p className="text-xs text-gray-500">Check-in Hari Ini</p>
             </div>
@@ -250,7 +265,7 @@ export default function LocationsPage() {
         <div className="flex justify-end mb-6">
           <button
             onClick={openNewForm}
-            className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-wa-dark transition-colors"
+            className="btn-wa-primary"
           >
             + Tambah Lokasi
           </button>
@@ -258,21 +273,23 @@ export default function LocationsPage() {
 
         {/* Locations Grid */}
         {locations.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-12 text-center">
+          <div className="panel-card p-12 text-center">
             <div className="text-6xl mb-4">📍</div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">Belum Ada Lokasi</h3>
             <p className="text-gray-500 mb-6">Tambahkan lokasi kantor untuk enable geofence</p>
             <button
               onClick={openNewForm}
-              className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-wa-dark"
+              className="btn-wa-primary"
             >
               + Tambah Lokasi
             </button>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {locations.map((loc) => (
-              <div key={loc.id} className="bg-white rounded-2xl border p-5 hover:shadow-lg transition-shadow">
+            {locations.map((loc) => {
+              const mapsHref = getMapsHref(loc.latitude, loc.longitude);
+              return (
+              <div key={loc.id} className="panel-card p-5 hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
@@ -288,7 +305,7 @@ export default function LocationsPage() {
                 <div className="space-y-2 mb-4 text-sm">
                   <div className="flex items-center gap-2 text-gray-700">
                     <span className="text-gray-400">📍</span>
-                    <span>{loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}</span>
+                    <span>{formatCoord(loc.latitude)}, {formatCoord(loc.longitude)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-700">
                     <span className="text-gray-400">📏</span>
@@ -303,13 +320,13 @@ export default function LocationsPage() {
                 <div className="flex gap-2 pt-3 border-t">
                   <button
                     onClick={() => handleEdit(loc)}
-                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                    className="btn-wa-secondary flex-1 px-3 py-2 text-xs"
                   >
                     ✏️ Edit
                   </button>
                   <button
                     onClick={() => handleViewCheckins(loc)}
-                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                    className="flex-1 rounded-lg border border-wa-primary/20 bg-wa-primary/10 px-3 py-2 text-xs font-medium text-wa-dark transition-colors hover:bg-wa-primary/15"
                   >
                     📊 Logs
                   </button>
@@ -322,23 +339,27 @@ export default function LocationsPage() {
                 </div>
 
                 {/* Open in Maps */}
-                <a
-                  href={`https://www.google.com/maps?q=${loc.latitude},${loc.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 block text-center text-xs text-wa-primary hover:underline"
-                >
-                  🗺️ Buka di Google Maps
-                </a>
+                {mapsHref ? (
+                  <a
+                    href={mapsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 block text-center text-xs text-wa-primary hover:underline"
+                  >
+                    🗺️ Buka di Google Maps
+                  </a>
+                ) : (
+                  <span className="mt-3 block text-center text-xs text-gray-400">Koordinat belum valid</span>
+                )}
               </div>
-            ))}
+            )})}
           </div>
         )}
 
         {/* Form Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <div className="panel-card w-full max-w-md p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-bold">
                   {editingLocation ? '✏️ Edit Lokasi' : '➕ Lokasi Baru'}
@@ -440,14 +461,14 @@ export default function LocationsPage() {
                   <button
                     type="button"
                     onClick={() => setShowForm(false)}
-                    className="flex-1 px-6 py-3 rounded-xl text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    className="btn-wa-secondary flex-1"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="flex-1 bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-wa-dark disabled:opacity-50"
+                    className="btn-wa-primary flex-1"
                   >
                     {saving ? '⏳ Menyimpan...' : '💾 Simpan'}
                   </button>
@@ -460,7 +481,7 @@ export default function LocationsPage() {
         {/* Checkins Modal */}
         {showCheckins && editingLocation && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="panel-card w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
               <div className="flex justify-between items-center p-6 border-b">
                 <div>
                   <h2 className="text-lg font-bold">📊 Riwayat Check-in</h2>

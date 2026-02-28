@@ -5,9 +5,9 @@
 /* Leaflet CSS */
 @import 'leaflet/dist/leaflet.css';
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Outfit', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 
 @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
@@ -229,3 +229,53 @@ body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: anti
 .text-wa-dark { color: var(--wa-dark); }
 .text-wa-teal { color: var(--wa-teal); }
 .border-wa-primary { border-color: var(--wa-primary); }
+
+/* Dashboard component primitives */
+.page-shell {
+  @apply space-y-6;
+}
+
+.page-header {
+  @apply flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-wa-dark;
+}
+
+.page-subtitle {
+  @apply text-sm text-gray-500;
+}
+
+.panel-card {
+  @apply rounded-2xl border border-gray-100 bg-white shadow-sm;
+}
+
+.btn-wa-primary {
+  @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50;
+  background-color: var(--wa-primary);
+}
+
+.btn-wa-primary:hover {
+  background-color: var(--wa-dark);
+}
+
+.btn-wa-secondary {
+  @apply inline-flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100;
+}
+
+.input-wa {
+  @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20;
+}
+
+.alert-success {
+  @apply rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700;
+}
+
+.alert-danger {
+  @apply rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700;
+}
+
+.stat-tile {
+  @apply rounded-xl border border-gray-100 bg-white p-4 shadow-sm;
+}

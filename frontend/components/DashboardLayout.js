@@ -9,7 +9,8 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -25,6 +26,20 @@ export default function DashboardLayout({ children }) {
     loadUser();
   }, [router]);
 
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('darkMode') : null;
+    const enabled = saved === 'true';
+    setDarkMode(enabled);
+    document.documentElement.classList.toggle('dark', enabled);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', String(darkMode));
+    }
+  }, [darkMode]);
+
   const handleLogout = () => {
     api.logout();
   };
@@ -32,7 +47,6 @@ export default function DashboardLayout({ children }) {
   const menuItems = [
     { id: 'overview', icon: '📊', label: 'Overview', path: '/dashboard' },
     { id: 'employees', icon: '👥', label: 'Karyawan', path: '/dashboard/employees' },
-    { id: 'attendance', icon: '📅', label: 'Absensi', path: '/dashboard', internal: true },
     { id: 'qr', icon: '📱', label: 'QR Code', path: '/dashboard/qr' },
     { id: 'shifts', icon: '🕐', label: 'Shift', path: '/dashboard/shifts' },
     { id: 'locations', icon: '📍', label: 'Lokasi', path: '/dashboard/locations' },
@@ -42,7 +56,7 @@ export default function DashboardLayout({ children }) {
     { id: 'slips', icon: '📄', label: 'Slip Absensi', path: '/dashboard/slips' },
     { id: 'overtime', icon: '⏰', label: 'Lembur', path: '/dashboard/overtime' },
     { id: 'leaves', icon: '🏖️', label: 'Cuti', path: '/dashboard/leaves' },
-    { id: 'reports', icon: '📊', label: 'Laporan', path: '/dashboard/reports' },
+    { id: 'reports', icon: '📈', label: 'Laporan', path: '/dashboard/reports' },
     { id: 'settings', icon: '⚙️', label: 'Pengaturan', path: '/dashboard/settings' },
     { id: 'payment', icon: '💎', label: 'Paket', path: '/dashboard/payment' },
   ];
@@ -55,145 +69,118 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 ease-in-out border-r border-gray-200`}>
-        {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <aside
+        className={`fixed top-0 left-0 z-50 flex h-screen flex-col border-r border-gray-200 bg-white px-4 dark:border-gray-800 dark:bg-black transition-all duration-300 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } ${sidebarCollapsed ? 'lg:w-[92px]' : 'w-[290px]'}`}
+      >
+        <div className={`flex items-center gap-3 pt-7 pb-6 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-wa-primary to-wa-dark rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">A</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Absenin</h1>
-              {user?.plan && (
-                <span className="text-xs text-wa-primary dark:text-wa-light font-medium bg-wa-light dark:bg-wa-dark px-2 py-0.5 rounded-full">
-                  {user.plan}
-                </span>
-              )}
-            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white font-bold">A</div>
+            {!sidebarCollapsed && (
+              <div className="leading-tight">
+                <p className="text-base font-semibold text-gray-800 dark:text-white">Absenin</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.plan || 'Plan'}</p>
+              </div>
+            )}
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
-          {menuItems.map((item) => (
-            item.internal ? (
-              <button
-                key={item.id}
-                onClick={() => {
-                  // For internal tabs, we need to handle differently
-                  if (item.id === 'overview' || item.id === 'attendance') {
-                    router.push('/dashboard');
-                  }
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive(item.path)
-                    ? 'bg-gradient-to-r from-wa-primary to-wa-dark text-white shadow-md shadow-wa-primary/30'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ) : (
+        <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto">
+          <div className={`${sidebarCollapsed ? 'hidden lg:block text-center' : ''} mb-3`}>
+            <p className="px-2 text-[11px] font-medium uppercase tracking-[0.12em] text-gray-400">Menu</p>
+          </div>
+
+          <nav className="space-y-1">
+            {menuItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.path}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive(item.path)
-                    ? 'bg-gradient-to-r from-wa-primary to-wa-dark text-white shadow-md shadow-wa-primary/30'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
+                    ? 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5'
+                } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                title={sidebarCollapsed ? item.label : undefined}
               >
-                <span className="text-lg">{item.icon}</span>
-                <span>{item.label}</span>
+                <span className="text-lg leading-none">{item.icon}</span>
+                {!sidebarCollapsed && <span>{item.label}</span>}
               </Link>
-            )
-          ))}
-        </nav>
+            ))}
+          </nav>
+        </div>
 
-        {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-wa-primary to-wa-dark rounded-full flex items-center justify-center text-white font-bold">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name || 'User'}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.company_name || 'Company'}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-500 hover:text-red-500 transition-colors p-2"
-              title="Keluar"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </div>
+        <div className="border-t border-gray-200 py-3 dark:border-gray-800">
+          <button
+            onClick={handleLogout}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5 ${sidebarCollapsed ? 'justify-center' : ''}`}
+            title="Keluar"
+          >
+            <span className="text-base">↩</span>
+            {!sidebarCollapsed && <span>Logout</span>}
+          </button>
         </div>
       </aside>
 
-      {/* Overlay for mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-
-            {/* Breadcrumb */}
-            <nav className="hidden sm:flex items-center gap-2 text-sm">
-              <Link href="/dashboard" className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                Dashboard
-              </Link>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-900 dark:text-white font-medium">
-                {menuItems.find(m => pathname?.startsWith(m.path))?.label || 'Overview'}
-              </span>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Quick Stats */}
-            <div className="hidden md:flex items-center gap-6 text-sm">
-              <div className="text-center">
-                <p className="text-lg font-bold text-wa-primary">🟢 Online</p>
-              </div>
+      <div className={`relative flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto ${sidebarCollapsed ? 'lg:ml-[92px]' : 'lg:ml-[290px]'}`}>
+        <header className="sticky top-0 z-30 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <div className="flex h-16 items-center justify-between px-4 lg:px-6">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen((v) => !v)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 lg:hidden dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                ☰
+              </button>
+              <button
+                onClick={() => setSidebarCollapsed((v) => !v)}
+                className="hidden h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 lg:inline-flex dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
+                title="Toggle sidebar"
+              >
+                {sidebarCollapsed ? '⮞' : '⮜'}
+              </button>
+              <nav className="hidden items-center gap-2 text-sm sm:flex">
+                <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Dashboard</Link>
+                <span className="text-gray-300 dark:text-gray-700">/</span>
+                <span className="font-medium text-gray-800 dark:text-white">
+                  {menuItems.find((m) => pathname?.startsWith(m.path))?.label || 'Overview'}
+                </span>
+              </nav>
             </div>
 
-            {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-              <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDarkMode((v) => !v)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800"
+                title="Toggle dark mode"
+              >
+                {darkMode ? '☀' : '☾'}
+              </button>
+              <div className="hidden items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 md:flex dark:border-gray-800 dark:bg-gray-900">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-xs font-bold text-white">
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+                <div className="leading-tight">
+                  <p className="text-xs font-semibold text-gray-800 dark:text-white">{user?.name || 'User'}</p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">{user?.company_name || 'Company'}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          {children}
+        <main className="p-4 md:p-6">
+          <div className="mx-auto max-w-[1480px]">
+            {children}
+          </div>
         </main>
       </div>
     </div>

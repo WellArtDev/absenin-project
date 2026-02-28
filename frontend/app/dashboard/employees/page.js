@@ -163,42 +163,42 @@ export default function EmployeesPage() {
     e.phone?.includes(search)
   );
 
-  const IC = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500";
+  const IC = "input-wa";
 
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="page-shell">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">👥 Karyawan</h1>
-          <p className="text-sm text-gray-500 mt-1">{employees.length} karyawan terdaftar</p>
+          <h1 className="page-title">👥 Karyawan</h1>
+          <p className="page-subtitle">{employees.length} karyawan terdaftar</p>
         </div>
       </div>
-      <div className="p-4 md:p-6">
+      <div className="panel-card p-4 md:p-6">
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-end gap-3 mb-6">
-          <button onClick={() => router.push('/dashboard/divisions')} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+          <button onClick={() => router.push('/dashboard/divisions')} className="btn-wa-secondary">
             🏢 Divisi
           </button>
-          <button onClick={() => router.push('/dashboard/jabatan')} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+          <button onClick={() => router.push('/dashboard/jabatan')} className="btn-wa-secondary">
             💼 Jabatan
           </button>
-          <button onClick={handleExport} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+          <button onClick={handleExport} className="btn-wa-secondary">
             📤 Export CSV
           </button>
-          <button onClick={() => document.getElementById('import_file').click()} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+          <button onClick={() => document.getElementById('import_file').click()} className="btn-wa-secondary">
             📥 Import CSV
           </button>
           <input id="import_file" type="file" accept=".csv" className="hidden" onChange={handleImport} />
-          <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">
+          <button onClick={() => { setEditing(null); setShowForm(true); }} className="btn-wa-primary">
             + Tambah Karyawan
           </button>
         </div>
 
       {msg && (
-        <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+        <div className={`mb-4 flex justify-between ${msg.startsWith('✅') ? 'alert-success' : 'alert-danger'}`}>
           <span>{msg}</span>
           <button onClick={() => setMsg('')}>&times;</button>
         </div>
