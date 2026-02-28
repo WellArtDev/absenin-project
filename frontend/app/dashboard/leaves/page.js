@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
+import DashboardHeader from '@/components/DashboardHeader';
 
 export default function LeavesPage() {
   const [leaves, setLeaves] = useState([]);
@@ -66,14 +67,15 @@ export default function LeavesPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">📅 Cuti / Izin</h1>
-          <p className="text-sm text-gray-500">{leaves.length} pengajuan</p>
+    <>
+      <DashboardHeader
+        title="📅 Cuti / Izin"
+        subtitle={`${leaves.length} pengajuan`}
+      />
+      <div className="p-4 md:p-6">
+        <div className="flex justify-end mb-6">
+          <button onClick={() => setShowForm(true)} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Ajukan Cuti</button>
         </div>
-        <button onClick={() => setShowForm(true)} className="bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-red-600">+ Ajukan Cuti</button>
-      </div>
 
       {msg && <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}><span>{msg}</span><button onClick={() => setMsg('')}>&times;</button></div>}
 
@@ -167,6 +169,6 @@ export default function LeavesPage() {
           </table>
         </div>
       </div>
-    </div>
+    </>
   );
 }

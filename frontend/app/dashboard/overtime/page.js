@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
+import DashboardHeader from '@/components/DashboardHeader';
 
 export default function OvertimePage() {
   const [records, setRecords] = useState([]);
@@ -40,11 +41,12 @@ export default function OvertimePage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">🕐 Lembur</h1>
-        <p className="text-sm text-gray-500">{records.length} catatan lembur</p>
-      </div>
+    <>
+      <DashboardHeader
+        title="🕐 Lembur"
+        subtitle={`${records.length} catatan lembur`}
+      />
+      <div className="p-4 md:p-6">
 
       {msg && <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}><span>{msg}</span><button onClick={() => setMsg('')}>&times;</button></div>}
 
@@ -90,6 +92,6 @@ export default function OvertimePage() {
           </table>
         </div>
       </div>
-    </div>
+    </>
   );
 }

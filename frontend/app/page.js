@@ -61,7 +61,7 @@ export default function LandingPage() {
       <nav style={{background:'rgba(255,255,255,.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid #f1f5f9',position:'sticky',top:0,zIndex:50}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:34,height:34,borderRadius:10,background:'linear-gradient(135deg,#0ea5e9,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(14,165,233,.4)'}}>
+            <div style={{width:34,height:34,borderRadius:10,background:'linear-gradient(135deg,#25D366,#075E54)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(37,211,102,.4)'}}>
               <span style={{color:'#fff',fontWeight:900,fontSize:15}}>A</span>
             </div>
             <span style={{fontSize:20,fontWeight:900,color:'#0f172a',letterSpacing:'-0.5px'}}>Absenin</span>
@@ -69,7 +69,7 @@ export default function LandingPage() {
           <div style={{display:'flex',gap:28,alignItems:'center'}}>
             <div style={{display:'flex',gap:24}} className="hidden md:flex">
               {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ']].map(([h,l])=>(
-                <a key={h} href={h} style={{fontSize:14,fontWeight:600,color:'#64748b',textDecoration:'none',transition:'color .15s'}} onMouseOver={e=>e.target.style.color='#0ea5e9'} onMouseOut={e=>e.target.style.color='#64748b'}>{l}</a>
+                <a key={h} href={h} style={{fontSize:14,fontWeight:600,color:'#64748b',textDecoration:'none',transition:'color .15s'}} onMouseOver={e=>e.target.style.color='#25D366'} onMouseOut={e=>e.target.style.color='#64748b'}>{l}</a>
               ))}
             </div>
             <div style={{display:'flex',gap:10,alignItems:'center'}}>
@@ -84,7 +84,7 @@ export default function LandingPage() {
       <section style={{paddingTop:100,paddingBottom:80,position:'relative',overflow:'hidden'}} className="grid-bg">
         <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,rgba(240,249,255,.8) 0%,#fff 100%)',pointerEvents:'none'}}/>
         <div style={{position:'absolute',top:-60,right:-60,width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,.12),transparent 70%)',pointerEvents:'none'}}/>
-        <div style={{position:'absolute',top:120,left:-80,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle,rgba(14,165,233,.1),transparent 70%)',pointerEvents:'none'}}/>
+        <div style={{position:'absolute',top:120,left:-80,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle,rgba(37,211,102,.1),transparent 70%)',pointerEvents:'none'}}/>
 
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',position:'relative'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:80,alignItems:'center'}} className="lg:grid-cols-2 grid-cols-1">
@@ -92,7 +92,7 @@ export default function LandingPage() {
             {/* Copy */}
             <div className="fu">
               <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'#f0f9ff',border:'1.5px solid #bae6fd',borderRadius:100,padding:'7px 18px',marginBottom:28}}>
-                <span style={{width:8,height:8,borderRadius:'50%',background:'#0ea5e9',display:'inline-block',animation:'pulse 2s infinite'}}/>
+                <span style={{width:8,height:8,borderRadius:'50%',background:'#25D366',display:'inline-block',animation:'pulse 2s infinite'}}/>
                 <span style={{fontSize:13,fontWeight:700,color:'#0369a1'}}>Multi-Tenant SaaS · WA Per-Perusahaan · v3.0</span>
               </div>
               <h1 style={{fontSize:'clamp(36px,4.5vw,64px)',fontWeight:900,color:'#0f172a',lineHeight:1.06,letterSpacing:'-1.5px',marginBottom:24}}>
@@ -154,7 +154,7 @@ export default function LandingPage() {
               </div>
               <div style={{position:'absolute',right:-42,bottom:100,background:'#fff',borderRadius:16,padding:'12px 18px',boxShadow:'0 12px 36px rgba(0,0,0,.12)',border:'1px solid #f1f5f9'}}>
                 <p style={{fontSize:11,color:'#94a3b8',margin:0}}>Lembur bulan ini</p>
-                <p style={{fontSize:18,fontWeight:900,color:'#6366f1',margin:0}}>128j 40m</p>
+                <p style={{fontSize:18,fontWeight:900,color:'#075E54',margin:0}}>128j 40m</p>
               </div>
             </div>
           </div>
@@ -192,11 +192,11 @@ export default function LandingPage() {
 
 {/* ── MULTI-TENANT SECTION ── */}
       <section style={{padding:'100px 0',background:'#0f172a',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',inset:0,opacity:.15,backgroundImage:'radial-gradient(circle at 20% 60%,#0ea5e9,transparent 50%),radial-gradient(circle at 80% 40%,#6366f1,transparent 50%)'}}/>
+        <div style={{position:'absolute',inset:0,opacity:.15,backgroundImage:'radial-gradient(circle at 20% 60%,#25D366,transparent 50%),radial-gradient(circle at 80% 40%,#075E54,transparent 50%)'}}/>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',position:'relative'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:80,alignItems:'center'}}>
             <div>
-              <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(14,165,233,.15)',border:'1px solid rgba(14,165,233,.3)',borderRadius:100,padding:'7px 18px',marginBottom:24}}>
+              <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(37,211,102,.15)',border:'1px solid rgba(37,211,102,.3)',borderRadius:100,padding:'7px 18px',marginBottom:24}}>
                 <span style={{fontSize:13,fontWeight:700,color:'#7dd3fc'}}>🏢 Multi-Tenant Architecture</span>
               </div>
               <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#fff',lineHeight:1.1,marginBottom:24,letterSpacing:'-1px'}}>
@@ -222,8 +222,8 @@ export default function LandingPage() {
             {/* Tenant cards */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               {[
-                {name:'PT Maju Bersama',wa:'0811-xxxx',emp:45,c:'linear-gradient(135deg,#0ea5e9,#0284c7)'},
-                {name:'CV Kreasi Digital',wa:'0822-xxxx',emp:18,c:'linear-gradient(135deg,#6366f1,#4f46e5)'},
+                {name:'PT Maju Bersama',wa:'0811-xxxx',emp:45,c:'linear-gradient(135deg,#25D366,#128C7E)'},
+                {name:'CV Kreasi Digital',wa:'0822-xxxx',emp:18,c:'linear-gradient(135deg,#075E54,#4f46e5)'},
                 {name:'UD Sinar Jaya',wa:'0833-xxxx',emp:12,c:'linear-gradient(135deg,#8b5cf6,#7c3aed)'},
                 {name:'PT Logistik Prima',wa:'0844-xxxx',emp:120,c:'linear-gradient(135deg,#06b6d4,#0891b2)'},
               ].map((t,i)=>(
@@ -288,7 +288,7 @@ export default function LandingPage() {
               {n:'04',t:'Karyawan Kirim HADIR',d:'Foto selfie + HADIR di WA → absensi tercatat lengkap dengan GPS otomatis.'},
             ].map((s,i)=>(
               <div key={i} style={{textAlign:'center',position:'relative',zIndex:1}}>
-                <div style={{width:64,height:64,borderRadius:18,background:'linear-gradient(135deg,#0ea5e9,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:900,fontSize:18,margin:'0 auto 20px',boxShadow:'0 8px 24px rgba(14,165,233,.35)'}}>{s.n}</div>
+                <div style={{width:64,height:64,borderRadius:18,background:'linear-gradient(135deg,#25D366,#075E54)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:900,fontSize:18,margin:'0 auto 20px',boxShadow:'0 8px 24px rgba(37,211,102,.35)'}}>{s.n}</div>
                 <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:8}}>{s.t}</h3>
                 <p style={{fontSize:13.5,color:'#64748b',lineHeight:1.6}}>{s.d}</p>
               </div>
@@ -310,7 +310,7 @@ export default function LandingPage() {
                   <div style={{display:'flex',flexDirection:'column',gap:10}}>
                     {g.cmds.map(([cmd,desc],j)=>(
                       <div key={j} style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-                        <code style={{background:'rgba(14,165,233,.2)',color:'#7dd3fc',padding:'3px 10px',borderRadius:7,fontSize:11,fontFamily:'monospace',whiteSpace:'nowrap'}}>{cmd}</code>
+                        <code style={{background:'rgba(37,211,102,.2)',color:'#7dd3fc',padding:'3px 10px',borderRadius:7,fontSize:11,fontFamily:'monospace',whiteSpace:'nowrap'}}>{cmd}</code>
                         <span style={{color:'#64748b',fontSize:12}}>{desc}</span>
                       </div>
                     ))}
@@ -369,8 +369,8 @@ export default function LandingPage() {
                 const highlight = p.slug === 'pro' || p.sort_order === 2;
                 const badge = highlight ? 'PALING POPULER' : null;
                 return (
-                  <div key={p.id} style={{borderRadius:24,overflow:'hidden',border:highlight?'none':'1.5px solid #f1f5f9',boxShadow:highlight?'0 0 0 2.5px #0ea5e9,0 20px 60px rgba(14,165,233,.2)':'0 2px 12px rgba(0,0,0,.04)',transform:highlight?'scale(1.03)':'none'}}>
-                    {badge&&<div style={{background:'linear-gradient(135deg,#0ea5e9,#6366f1)',color:'#fff',textAlign:'center',padding:'12px',fontSize:12,fontWeight:900,letterSpacing:'0.5px'}}>{badge}</div>}
+                  <div key={p.id} style={{borderRadius:24,overflow:'hidden',border:highlight?'none':'1.5px solid #f1f5f9',boxShadow:highlight?'0 0 0 2.5px #25D366,0 20px 60px rgba(37,211,102,.2)':'0 2px 12px rgba(0,0,0,.04)',transform:highlight?'scale(1.03)':'none'}}>
+                    {badge&&<div style={{background:'linear-gradient(135deg,#25D366,#075E54)',color:'#fff',textAlign:'center',padding:'12px',fontSize:12,fontWeight:900,letterSpacing:'0.5px'}}>{badge}</div>}
                     <div style={{background:'#fff',padding:'32px'}}>
                       <h3 style={{fontSize:22,fontWeight:900,color:'#0f172a',marginBottom:8}}>{p.name}</h3>
                       <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
@@ -378,7 +378,7 @@ export default function LandingPage() {
                         <span style={{fontSize:38,fontWeight:900,color:'#0f172a',lineHeight:1}}>{Number(p.price).toLocaleString('id-ID')}</span>
                         <span style={{fontSize:13,color:'#94a3b8'}}>{p.duration_days === 0 ? 'selamanya' : `/ ${p.duration_days} hari`}</span>
                       </div>
-                      <p style={{fontSize:13,color:'#0ea5e9',fontWeight:700,marginBottom:24}}>👥 {p.max_employees >= 999 ? 'Unlimited' : `${p.max_employees}`} karyawan</p>
+                      <p style={{fontSize:13,color:'#25D366',fontWeight:700,marginBottom:24}}>👥 {p.max_employees >= 999 ? 'Unlimited' : `${p.max_employees}`} karyawan</p>
                       <ul style={{listStyle:'none',padding:0,margin:'0 0 28px',display:'flex',flexDirection:'column',gap:10}}>
                         {features.map((f,j) => (
                           <li key={j} style={{display:'flex',alignItems:'center',gap:10,fontSize:13,color:'#374151'}}>
@@ -425,7 +425,7 @@ export default function LandingPage() {
               <details key={i} style={{background:'#fff',borderRadius:18,border:'1.5px solid #e2e8f0',overflow:'hidden'}}>
                 <summary style={{padding:'20px 24px',fontWeight:700,color:'#0f172a',fontSize:15,display:'flex',justifyContent:'space-between',alignItems:'center',userSelect:'none'}}>
                   <span>{f.q}</span>
-                  <span className="faq-plus" style={{color:'#0ea5e9',fontSize:24,fontWeight:300,transition:'transform .2s',flexShrink:0,marginLeft:16}}>+</span>
+                  <span className="faq-plus" style={{color:'#25D366',fontSize:24,fontWeight:300,transition:'transform .2s',flexShrink:0,marginLeft:16}}>+</span>
                 </summary>
                 <div style={{padding:'0 24px 20px',color:'#475569',fontSize:14,lineHeight:1.75,borderTop:'1px solid #f1f5f9'}}><br/>{f.a}</div>
               </details>
@@ -436,14 +436,14 @@ export default function LandingPage() {
 
       {/* ── CTA ── */}
       <section style={{padding:'120px 0',position:'relative',overflow:'hidden'}}>
-        <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0ea5e9,#6366f1)'}}/>
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#25D366,#075E54)'}}/>
         <div style={{position:'absolute',inset:0,opacity:.1,backgroundImage:'radial-gradient(circle at 30% 50%,#fff,transparent 50%)'}}/>
         <div style={{position:'absolute',top:-100,right:-100,width:400,height:400,borderRadius:'50%',border:'1px solid rgba(255,255,255,.1)',pointerEvents:'none'}}/>
         <div style={{position:'absolute',bottom:-80,left:-80,width:300,height:300,borderRadius:'50%',border:'1px solid rgba(255,255,255,.08)',pointerEvents:'none'}}/>
         <div style={{maxWidth:800,margin:'0 auto',padding:'0 24px',textAlign:'center',position:'relative'}}>
           <h2 style={{fontSize:'clamp(36px,5vw,64px)',fontWeight:900,color:'#fff',marginBottom:20,letterSpacing:'-1.5px',lineHeight:1.05}}>Mulai Sekarang,<br/>Gratis.</h2>
           <p style={{fontSize:19,color:'rgba(255,255,255,.85)',marginBottom:48,maxWidth:500,margin:'0 auto 48px',lineHeight:1.65}}>Daftar dalam 30 detik. Gratis 10 karyawan. Tidak perlu kartu kredit. Setup 5 menit, langsung jalan.</p>
-          <Link href="/register" style={{display:'inline-flex',alignItems:'center',gap:12,background:'#fff',color:'#0ea5e9',padding:'18px 48px',borderRadius:18,fontSize:18,fontWeight:900,textDecoration:'none',boxShadow:'0 8px 40px rgba(0,0,0,.2)',transition:'transform .18s,box-shadow .18s'}} onMouseOver={e=>{e.currentTarget.style.transform='scale(1.04)';e.currentTarget.style.boxShadow='0 12px 48px rgba(0,0,0,.3)'}} onMouseOut={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='0 8px 40px rgba(0,0,0,.2)'}}>
+          <Link href="/register" style={{display:'inline-flex',alignItems:'center',gap:12,background:'#fff',color:'#25D366',padding:'18px 48px',borderRadius:18,fontSize:18,fontWeight:900,textDecoration:'none',boxShadow:'0 8px 40px rgba(0,0,0,.2)',transition:'transform .18s,box-shadow .18s'}} onMouseOver={e=>{e.currentTarget.style.transform='scale(1.04)';e.currentTarget.style.boxShadow='0 12px 48px rgba(0,0,0,.3)'}} onMouseOut={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='0 8px 40px rgba(0,0,0,.2)'}}>
             🚀 Buat Akun Gratis
           </Link>
           <p style={{color:'rgba(255,255,255,.65)',fontSize:13,marginTop:24,fontWeight:600}}>✅ Gratis &nbsp;·&nbsp; ✅ Tanpa kartu kredit &nbsp;·&nbsp; ✅ Setup 5 menit &nbsp;·&nbsp; ✅ Cancel kapan saja</p>
@@ -475,7 +475,7 @@ export default function LandingPage() {
           <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr',gap:48,marginBottom:56}}>
             <div>
               <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
-                <div style={{width:34,height:34,borderRadius:10,background:'linear-gradient(135deg,#0ea5e9,#6366f1)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{color:'#fff',fontWeight:900,fontSize:15}}>A</span></div>
+                <div style={{width:34,height:34,borderRadius:10,background:'linear-gradient(135deg,#25D366,#075E54)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{color:'#fff',fontWeight:900,fontSize:15}}>A</span></div>
                 <span style={{fontSize:20,fontWeight:900,color:'#fff',letterSpacing:'-0.5px'}}>Absenin</span>
               </div>
               <p style={{fontSize:14,lineHeight:1.75,maxWidth:300,margin:'0 0 20px'}}>Sistem absensi karyawan modern via WhatsApp. Multi-tenant SaaS, selfie verification, GPS real-time, HRM lengkap untuk perusahaan Indonesia.</p>

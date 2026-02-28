@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import DashboardHeader from '@/components/DashboardHeader';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -124,13 +125,12 @@ export default function SettingsPage() {
   const inputCls = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white";
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">⚙️ Pengaturan</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {settings.company_name} — <span className="capitalize">{settings.plan}</span>
-        </p>
-      </div>
+    <>
+      <DashboardHeader
+        title="⚙️ Pengaturan"
+        subtitle={`${settings.company_name} — ${settings.plan}`}
+      />
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
 
       {msg && (
         <div className={`px-4 py-3 rounded-xl text-sm mb-6 flex items-center justify-between ${
@@ -393,6 +393,6 @@ export default function SettingsPage() {
           </button>
         </div>
       </form>
-    </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
+import DashboardHeader from '@/components/DashboardHeader';
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState([]);
@@ -38,10 +39,16 @@ export default function EmployeesPage() {
         name: fd.get('emp_name'),
         employee_id: fd.get('emp_eid'),
         email: fd.get('emp_email'),
-        phone: fd.get('emp_phone'),
+        phone: fd.get('emp_work_phone'),
         division_id: fd.get('emp_division') || null,
         position_id: fd.get('emp_position') || null,
         join_date: fd.get('emp_join_date') || null,
+        employment_status: fd.get('emp_status') || 'tetap',
+        base_salary: fd.get('emp_salary') ? parseInt(fd.get('emp_salary')) : null,
+        ktp_number: fd.get('emp_ktp'),
+        date_of_birth: fd.get('emp_dob') || null,
+        personal_email: fd.get('emp_personal_email'),
+        npwp: fd.get('emp_npwp'),
       };
 
       if (!data.name) throw new Error('Nama wajib diisi');
@@ -67,6 +74,71 @@ export default function EmployeesPage() {
     } catch (e) { setMsg('❌ ' + e.message); }
   };
 
+  const handleExport = async () => {
+    try {
+      const headers = ['Nama', 'Employee ID', 'Email Perusahaan', 'No. WA', 'Divisi', 'Jabatan', 'Tanggal Mulai', 'Status', 'Gaji Pokok', 'No. KTP', 'Tanggal Lahir', 'Email Pribadi', 'NPWP'];
+      const rows = employees.map(e => [
+        e.name || '',
+        e.employee_id || '',
+        e.email || '',
+        e.phone || '',
+        e.division_name || '',
+        e.position_name || '',
+        e.join_date?.split('T')[0] || '',
+        e.employment_status || 'tetap',
+        e.base_salary || '',
+        e.ktp_number || '',
+        e.date_of_birth?.split('T')[0] || '',
+        e.personal_email || '',
+        e.npwp || '',
+      ]);
+      const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `karyawan_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMsg('✅ Data berhasil di-export!');
+    } catch (e) { setMsg('❌ ' + e.message); }
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) throw new Error('File CSV kosong atau tidak valid');
+
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').toLowerCase());
+      const nameIdx = headers.findIndex(h => h.includes('nama'));
+      const phoneIdx = headers.findIndex(h => h.includes('wa') || h.includes('telepon'));
+
+      let successCount = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.replace(/"/g, ''));
+        if (values.length < 2) continue;
+
+        const name = values[nameIdx] || values[0];
+        const phone = values[phoneIdx] || values.find(v => v.match(/^628/)) || '';
+
+        if (!name) continue;
+
+        try {
+          await api.createEmployee({ name, phone: phone.replace(/[^0-9]/g, '') });
+          successCount++;
+        } catch (err) {
+          console.error(`Gagal import baris ${i}:`, err);
+        }
+      }
+      setMsg(`✅ Berhasil import ${successCount} karyawan!`);
+      load();
+    } catch (e) { setMsg('❌ ' + e.message); }
+    e.target.value = '';
+  };
+
   const handleEdit = (emp) => { setEditing(emp); setShowForm(true); };
 
   const filtered = employees.filter(e =>
@@ -80,16 +152,28 @@ export default function EmployeesPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">👥 Karyawan</h1>
-          <p className="text-sm text-gray-500">{employees.length} karyawan terdaftar</p>
+    <>
+      <DashboardHeader
+        title="👥 Karyawan"
+        subtitle={`${employees.length} karyawan terdaftar`}
+      />
+      <div className="p-4 md:p-6">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap justify-end gap-3 mb-6">
+          <button onClick={() => router.push('/dashboard/divisions')} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+            🏢 Divisi
+          </button>
+          <button onClick={handleExport} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+            📤 Export CSV
+          </button>
+          <button onClick={() => document.getElementById('import_file').click()} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+            📥 Import CSV
+          </button>
+          <input id="import_file" type="file" accept=".csv" className="hidden" onChange={handleImport} />
+          <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">
+            + Tambah Karyawan
+          </button>
         </div>
-        <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-red-600">
-          + Tambah Karyawan
-        </button>
-      </div>
 
       {msg && (
         <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
@@ -107,49 +191,90 @@ export default function EmployeesPage() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => e.target === e.currentTarget && setShowForm(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">{editing ? '✏️ Edit' : '➕ Tambah'} Karyawan</h2>
               <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Informasi Pekerjaan */}
               <div>
-                <label htmlFor="emp_name" className="block text-sm font-medium mb-1">Nama Lengkap *</label>
-                <input id="emp_name" name="emp_name" type="text" required defaultValue={editing?.name || ''} placeholder="John Doe" className={IC} autoComplete="name" />
+                <h3 className="text-sm font-bold text-gray-700 mb-3 pb-2 border-b">💼 Informasi Pekerjaan</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="emp_name" className="block text-sm font-medium mb-1">Nama Lengkap *</label>
+                    <input id="emp_name" name="emp_name" type="text" required defaultValue={editing?.name || ''} placeholder="John Doe" className={IC} autoComplete="name" />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_eid" className="block text-sm font-medium mb-1">Employee ID</label>
+                    <input id="emp_eid" name="emp_eid" type="text" defaultValue={editing?.employee_id || ''} placeholder="EMP-001" className={IC} />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_email" className="block text-sm font-medium mb-1">Email Perusahaan</label>
+                    <input id="emp_email" name="emp_email" type="email" defaultValue={editing?.email || ''} placeholder="john@company.com" className={IC} autoComplete="email" />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_work_phone" className="block text-sm font-medium mb-1">No. Kontak (WA) *</label>
+                    <input id="emp_work_phone" name="emp_work_phone" type="tel" required defaultValue={editing?.phone || ''} placeholder="628123456789" className={IC} autoComplete="tel" />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_division" className="block text-sm font-medium mb-1">Divisi</label>
+                    <select id="emp_division" name="emp_division" defaultValue={editing?.division_id || ''} className={IC}>
+                      <option value="">-- Pilih Divisi --</option>
+                      {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="emp_position" className="block text-sm font-medium mb-1">Jabatan</label>
+                    <select id="emp_position" name="emp_position" defaultValue={editing?.position_id || ''} className={IC}>
+                      <option value="">-- Pilih Jabatan --</option>
+                      {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="emp_join_date" className="block text-sm font-medium mb-1">Tanggal Mulai Kerja</label>
+                    <input id="emp_join_date" name="emp_join_date" type="date" defaultValue={editing?.join_date?.split('T')[0] || ''} className={IC} />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_status" className="block text-sm font-medium mb-1">Status Karyawan</label>
+                    <select id="emp_status" name="emp_status" defaultValue={editing?.employment_status || 'tetap'} className={IC}>
+                      <option value="tetap">Tetap</option>
+                      <option value="kontrak">Kontrak</option>
+                      <option value="magang">Magang</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label htmlFor="emp_salary" className="block text-sm font-medium mb-1">Gaji Pokok</label>
+                    <input id="emp_salary" name="emp_salary" type="number" defaultValue={editing?.base_salary || ''} placeholder="5000000" className={IC} />
+                  </div>
+                </div>
               </div>
+
+              {/* Informasi Pribadi */}
               <div>
-                <label htmlFor="emp_eid" className="block text-sm font-medium mb-1">ID Karyawan</label>
-                <input id="emp_eid" name="emp_eid" type="text" defaultValue={editing?.employee_id || ''} placeholder="EMP-001" className={IC} />
+                <h3 className="text-sm font-bold text-gray-700 mb-3 pb-2 border-b">👤 Informasi Pribadi</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="emp_ktp" className="block text-sm font-medium mb-1">Nomor KTP</label>
+                    <input id="emp_ktp" name="emp_ktp" type="text" defaultValue={editing?.ktp_number || ''} placeholder="3201xxxxxxxxxxxxxx" className={IC} />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_dob" className="block text-sm font-medium mb-1">Tanggal Lahir</label>
+                    <input id="emp_dob" name="emp_dob" type="date" defaultValue={editing?.date_of_birth?.split('T')[0] || ''} className={IC} />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_personal_email" className="block text-sm font-medium mb-1">Email Pribadi</label>
+                    <input id="emp_personal_email" name="emp_personal_email" type="email" defaultValue={editing?.personal_email || ''} placeholder="personal@gmail.com" className={IC} />
+                  </div>
+                  <div>
+                    <label htmlFor="emp_npwp" className="block text-sm font-medium mb-1">NPWP</label>
+                    <input id="emp_npwp" name="emp_npwp" type="text" defaultValue={editing?.npwp || ''} placeholder="" className={IC} />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label htmlFor="emp_email" className="block text-sm font-medium mb-1">Email</label>
-                <input id="emp_email" name="emp_email" type="email" defaultValue={editing?.email || ''} placeholder="john@email.com" className={IC} autoComplete="email" />
-              </div>
-              <div>
-                <label htmlFor="emp_phone" className="block text-sm font-medium mb-1">Nomor Telepon (WhatsApp)</label>
-                <input id="emp_phone" name="emp_phone" type="tel" defaultValue={editing?.phone || ''} placeholder="628123456789" className={IC} autoComplete="tel" />
-                <p className="text-xs text-gray-400 mt-1">Format: 628xxx (untuk notifikasi WA)</p>
-              </div>
-              <div>
-                <label htmlFor="emp_division" className="block text-sm font-medium mb-1">Divisi</label>
-                <select id="emp_division" name="emp_division" defaultValue={editing?.division_id || ''} className={IC}>
-                  <option value="">-- Pilih Divisi --</option>
-                  {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="emp_position" className="block text-sm font-medium mb-1">Jabatan</label>
-                <select id="emp_position" name="emp_position" defaultValue={editing?.position_id || ''} className={IC}>
-                  <option value="">-- Pilih Jabatan --</option>
-                  {positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="emp_join_date" className="block text-sm font-medium mb-1">Tanggal Bergabung</label>
-                <input id="emp_join_date" name="emp_join_date" type="date" defaultValue={editing?.join_date?.split('T')[0] || ''} className={IC} />
-              </div>
+
               <div className="flex gap-3 pt-2">
-                <button type="submit" disabled={saving} className="bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50 flex-1">
+                <button type="submit" disabled={saving} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-wa-dark disabled:opacity-50 flex-1">
                   {saving ? '⏳...' : editing ? '💾 Update' : '➕ Tambah'}
                 </button>
                 <button type="button" onClick={() => setShowForm(false)} className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl text-sm font-semibold">Batal</button>
@@ -202,6 +327,6 @@ export default function EmployeesPage() {
           </table>
         </div>
       </div>
-    </div>
+    </>
   );
 }
