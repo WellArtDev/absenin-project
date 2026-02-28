@@ -160,6 +160,8 @@ export default function DashboardPage() {
     { id: 'overview', l: '📊 Overview', internal: true },
     { id: 'employees', l: '👥 Karyawan', path: '/dashboard/employees' },
     { id: 'attendance', l: '📅 Absensi', internal: true },
+    { id: 'shifts', l: '🕐 Shift', path: '/dashboard/shifts' },
+    { id: 'broadcast', l: '📢 Broadcast', path: '/dashboard/broadcast' },
     { id: 'overtime', l: '🕐 Lembur', path: '/dashboard/overtime' },
     { id: 'leaves', l: '🏖️ Cuti', path: '/dashboard/leaves' },
     { id: 'reports', l: '📤 Laporan', path: '/dashboard/reports' },

@@ -103,6 +103,21 @@ class ApiClient {
   async confirmSAPayment(id) { return this.request(`/api/superadmin/payments/${id}/confirm`, { method: 'PUT' }); }
   async rejectSAPayment(id, reason) { return this.request(`/api/superadmin/payments/${id}/reject`, { method: 'PUT', body: JSON.stringify({ reason }) }); }
 
+  // Broadcast
+  async sendBroadcast(data) { return this.request('/api/broadcast/send', { method: 'POST', body: JSON.stringify(data) }); }
+  async getBroadcastHistory() { return this.request('/api/broadcast/history'); }
+  async getBroadcastStats() { return this.request('/api/broadcast/stats'); }
+
+  // Shifts
+  async getShifts() { return this.request('/api/shifts'); }
+  async getShift(id) { return this.request(`/api/shifts/${id}`); }
+  async createShift(data) { return this.request('/api/shifts', { method: 'POST', body: JSON.stringify(data) }); }
+  async updateShift(id, data) { return this.request(`/api/shifts/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  async deleteShift(id) { return this.request(`/api/shifts/${id}`, { method: 'DELETE' }); }
+  async assignShift(data) { return this.request('/api/shifts/assign', { method: 'POST', body: JSON.stringify(data) }); }
+  async getEmployeesWithShifts() { return this.request('/api/shifts/employees/list'); }
+  async getEmployeeShift(employeeId, date) { return this.request(`/api/shifts/employee/${employeeId}?date=${date}`); }
+
   async exportCSV(sd, ed) {
     const token = this.getToken();
     const r = await fetch(`${this.baseUrl}/api/reports/export?start_date=${sd}&end_date=${ed}&format=csv`, { headers: { Authorization: `Bearer ${token}` } });

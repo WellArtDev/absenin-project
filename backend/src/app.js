@@ -38,7 +38,9 @@ app.use('/api/overtime', apiLimiter, require('./routes/overtime'));
 app.use('/api/leaves', apiLimiter, require('./routes/leaves'));
 app.use('/api/selfie', apiLimiter, require('./routes/selfie'));
 app.use('/api/settings', apiLimiter, require('./routes/settings'));
+app.use('/api/broadcast', apiLimiter, require('./routes/broadcast'));
 app.use('/api/payment', apiLimiter, require('./routes/payment'));
+app.use('/api/shifts', apiLimiter, require('./routes/shifts'));
 app.use('/api/superadmin', apiLimiter, require('./routes/superadmin'));
 
 // Webhooks - multiple providers
