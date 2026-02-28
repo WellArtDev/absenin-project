@@ -261,7 +261,12 @@ export default function SuperadminPage() {
       <div className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
-            <div className="flex items-center gap-3"><div className="w-8 h-8 bg-wa-primary rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">SA</span></div><span className="text-lg font-bold">Absenin Admin</span></div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-wa-light rounded-lg p-1 flex items-center justify-center">
+                <img src="/logo-absenin.svg" alt="Absenin Logo" className="w-full h-full object-contain" />
+              </div>
+              <span className="text-lg font-bold">Absenin Admin</span>
+            </div>
             <div className="flex items-center gap-1">{tabs.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-wa-light text-wa-dark' : 'text-gray-600 hover:bg-gray-100'}`}>{t.l}</button>)}</div>
             <button onClick={() => api.logout()} className="text-sm text-wa-primary font-medium px-3 py-1.5 rounded-lg hover:bg-wa-light">Keluar</button>
           </div>

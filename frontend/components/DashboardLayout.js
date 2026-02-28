@@ -77,7 +77,9 @@ export default function DashboardLayout({ children }) {
       >
         <div className={`flex items-center gap-3 pt-7 pb-6 ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white font-bold">A</div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 p-1">
+              <img src="/logo-absenin.svg" alt="Absenin Logo" className="h-full w-full object-contain" />
+            </div>
             {!sidebarCollapsed && (
               <div className="leading-tight">
                 <p className="text-base font-semibold text-gray-800 dark:text-white">Absenin</p>
