@@ -102,6 +102,24 @@ class ApiClient {
   async getSAPayments(p = {}) { return this.request(`/api/superadmin/payments?${new URLSearchParams(p)}`); }
   async confirmSAPayment(id) { return this.request(`/api/superadmin/payments/${id}/confirm`, { method: 'PUT' }); }
   async rejectSAPayment(id, reason) { return this.request(`/api/superadmin/payments/${id}/reject`, { method: 'PUT', body: JSON.stringify({ reason }) }); }
+  async getSABlogPosts(p = {}) { return this.request(`/api/superadmin/blog/posts?${new URLSearchParams(p)}`); }
+  async getSABlogPost(id) { return this.request(`/api/superadmin/blog/posts/${id}`); }
+  async createSABlogPost(d) { return this.request('/api/superadmin/blog/posts', { method: 'POST', body: JSON.stringify(d) }); }
+  async updateSABlogPost(id, d) { return this.request(`/api/superadmin/blog/posts/${id}`, { method: 'PUT', body: JSON.stringify(d) }); }
+  async deleteSABlogPost(id) { return this.request(`/api/superadmin/blog/posts/${id}`, { method: 'DELETE' }); }
+  async uploadSABlogImage(file) {
+    const token = this.getToken();
+    const fd = new FormData();
+    fd.append('image', file);
+    const response = await fetch(`${this.baseUrl}/api/superadmin/blog/upload-image`, {
+      method: 'POST',
+      headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      body: fd
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Gagal upload gambar');
+    return data;
+  }
 
   // Broadcast
   async sendBroadcast(data) { return this.request('/api/broadcast/send', { method: 'POST', body: JSON.stringify(data) }); }

@@ -2,7 +2,74 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/db');
 const { authenticate, superadminOnly } = require('../middleware/auth');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
 router.use(authenticate, superadminOnly);
+
+const blogUploadDir = path.join(__dirname, '../../uploads/blog');
+if (!fs.existsSync(blogUploadDir)) fs.mkdirSync(blogUploadDir, { recursive: true });
+
+const blogStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, blogUploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
+    cb(null, `blog_${Date.now()}_${Math.round(Math.random() * 1e9)}${safeExt}`);
+  }
+});
+
+const uploadBlogImage = multer({
+  storage: blogStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /^image\/(jpeg|png|webp)$/i.test(file.mimetype || '');
+    cb(ok ? null : new Error('Format gambar harus JPG/PNG/WEBP'), ok);
+  }
+});
+
+const ensureBlogTables = async () => {
+  await query(`
+    CREATE TABLE IF NOT EXISTS blog_posts (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      slug VARCHAR(255) UNIQUE NOT NULL,
+      excerpt TEXT,
+      content_html TEXT NOT NULL,
+      feature_image_url TEXT,
+      status VARCHAR(20) NOT NULL DEFAULT 'draft',
+      published_at TIMESTAMP NULL,
+      created_by INTEGER REFERENCES users(id),
+      updated_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_status_created_at ON blog_posts(status, created_at DESC)');
+  await query('CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug)');
+};
+
+const toSlug = (text = '') => String(text)
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '')
+  .slice(0, 200) || `post-${Date.now()}`;
+
+const getUniqueSlug = async (baseSlug, exceptId = null) => {
+  let slug = baseSlug || `post-${Date.now()}`;
+  let i = 1;
+
+  while (true) {
+    const r = exceptId
+      ? await query('SELECT id FROM blog_posts WHERE slug = $1 AND id != $2 LIMIT 1', [slug, exceptId])
+      : await query('SELECT id FROM blog_posts WHERE slug = $1 LIMIT 1', [slug]);
+    if (r.rows.length === 0) return slug;
+    i += 1;
+    slug = `${baseSlug}-${i}`;
+  }
+};
 
 // ======= DASHBOARD =======
 router.get('/dashboard', async (req, res) => {
@@ -176,6 +243,162 @@ router.put('/payments/:id/reject', async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Not found.' });
     res.json({ success: true, data: result.rows[0] });
   } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
+});
+
+// ======= BLOG =======
+router.get('/blog/posts', async (req, res) => {
+  try {
+    await ensureBlogTables();
+    const { status, search } = req.query;
+    let sql = `
+      SELECT bp.*,
+        cu.name as created_by_name,
+        uu.name as updated_by_name
+      FROM blog_posts bp
+      LEFT JOIN users cu ON cu.id = bp.created_by
+      LEFT JOIN users uu ON uu.id = bp.updated_by
+      WHERE 1=1
+    `;
+    const params = [];
+    let pi = 1;
+
+    if (status) {
+      sql += ` AND bp.status = $${pi++}`;
+      params.push(status);
+    }
+    if (search) {
+      sql += ` AND (bp.title ILIKE $${pi} OR bp.excerpt ILIKE $${pi} OR bp.content_html ILIKE $${pi})`;
+      params.push(`%${search}%`);
+      pi += 1;
+    }
+
+    sql += ' ORDER BY bp.created_at DESC';
+    const result = await query(sql, params);
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.get('/blog/posts/:id', async (req, res) => {
+  try {
+    await ensureBlogTables();
+    const result = await query('SELECT * FROM blog_posts WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Post tidak ditemukan.' });
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.post('/blog/upload-image', uploadBlogImage.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'File gambar wajib diisi.' });
+    const imageUrl = `/uploads/blog/${req.file.filename}`;
+    res.json({ success: true, data: { image_url: imageUrl } });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ success: false, message: error.message || 'Gagal upload gambar.' });
+  }
+});
+
+router.post('/blog/posts', async (req, res) => {
+  try {
+    await ensureBlogTables();
+    const { title, slug, excerpt, content_html, feature_image_url, status } = req.body;
+    if (!title || !content_html) {
+      return res.status(400).json({ success: false, message: 'Title dan konten wajib diisi.' });
+    }
+
+    const baseSlug = toSlug(slug || title);
+    const finalSlug = await getUniqueSlug(baseSlug);
+    const postStatus = status === 'published' ? 'published' : 'draft';
+    const publishedAt = postStatus === 'published' ? new Date() : null;
+
+    const result = await query(`
+      INSERT INTO blog_posts (
+        title, slug, excerpt, content_html, feature_image_url, status, published_at, created_by, updated_by
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8)
+      RETURNING *
+    `, [
+      title,
+      finalSlug,
+      excerpt || null,
+      content_html,
+      feature_image_url || null,
+      postStatus,
+      publishedAt,
+      req.user.userId
+    ]);
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.put('/blog/posts/:id', async (req, res) => {
+  try {
+    await ensureBlogTables();
+    const { title, slug, excerpt, content_html, feature_image_url, status } = req.body;
+    const existing = await query('SELECT * FROM blog_posts WHERE id = $1', [req.params.id]);
+    if (existing.rows.length === 0) return res.status(404).json({ success: false, message: 'Post tidak ditemukan.' });
+
+    const current = existing.rows[0];
+    const baseSlug = toSlug(slug || title || current.title);
+    const finalSlug = await getUniqueSlug(baseSlug, req.params.id);
+    const postStatus = status === 'published' ? 'published' : 'draft';
+    const publishedAt = postStatus === 'published'
+      ? (current.published_at || new Date())
+      : null;
+
+    const result = await query(`
+      UPDATE blog_posts
+      SET
+        title = COALESCE($1, title),
+        slug = $2,
+        excerpt = $3,
+        content_html = COALESCE($4, content_html),
+        feature_image_url = $5,
+        status = $6,
+        published_at = $7,
+        updated_by = $8,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $9
+      RETURNING *
+    `, [
+      title || null,
+      finalSlug,
+      excerpt || null,
+      content_html || null,
+      feature_image_url || null,
+      postStatus,
+      publishedAt,
+      req.user.userId,
+      req.params.id
+    ]);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
+router.delete('/blog/posts/:id', async (req, res) => {
+  try {
+    await ensureBlogTables();
+    const result = await query('DELETE FROM blog_posts WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Post tidak ditemukan.' });
+    res.json({ success: true, message: 'Post dihapus.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
 });
 
 module.exports = router;

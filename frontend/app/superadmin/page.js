@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 
@@ -24,6 +24,20 @@ export default function SuperadminPage() {
   const [planForm, setPlanForm] = useState({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0, features: [] });
   const [showBankForm, setShowBankForm] = useState(false);
   const [bankForm, setBankForm] = useState({ bank_name: '', account_number: '', account_name: '', sort_order: 0 });
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [blogLoading, setBlogLoading] = useState(false);
+  const [showBlogForm, setShowBlogForm] = useState(false);
+  const [editingBlog, setEditingBlog] = useState(null);
+  const [blogImageUploading, setBlogImageUploading] = useState(false);
+  const [blogForm, setBlogForm] = useState({
+    title: '',
+    slug: '',
+    excerpt: '',
+    content_html: '',
+    feature_image_url: '',
+    status: 'draft'
+  });
+  const editorRef = useRef(null);
 
   useEffect(() => {
     if (!api.getToken()) { router.push('/login'); return; }
@@ -50,6 +64,7 @@ export default function SuperadminPage() {
     if (tab === 'plans') loadPlans();
     if (tab === 'banks') loadBanks();
     if (tab === 'payments') loadPayments();
+    if (tab === 'blog') loadBlogPosts();
   }, [tab]);
 
   const toggleCompany = async (id, active) => { try { await api.updateSACompany(id, { is_active: !active }); loadCompanies(); } catch (e) { alert(e.message); } };
@@ -126,9 +141,119 @@ export default function SuperadminPage() {
   const confirmPayment = async (id) => { if (!confirm('Konfirmasi pembayaran?')) return; try { await api.confirmSAPayment(id); alert('✅ Pembayaran dikonfirmasi!'); loadPayments(); loadDashboard(); } catch (e) { alert(e.message); } };
   const rejectPayment = async (id) => { const r = prompt('Alasan:'); if (r === null) return; try { await api.rejectSAPayment(id, r); loadPayments(); } catch (e) { alert(e.message); } };
 
+  const loadBlogPosts = async () => {
+    try {
+      setBlogLoading(true);
+      const r = await api.getSABlogPosts();
+      setBlogPosts(r.data || []);
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBlogLoading(false);
+    }
+  };
+
+  const resetBlogForm = () => {
+    setEditingBlog(null);
+    setBlogForm({
+      title: '',
+      slug: '',
+      excerpt: '',
+      content_html: '',
+      feature_image_url: '',
+      status: 'draft'
+    });
+    setShowBlogForm(false);
+  };
+
+  const openBlogForm = (post = null) => {
+    if (post) {
+      setEditingBlog(post);
+      setBlogForm({
+        title: post.title || '',
+        slug: post.slug || '',
+        excerpt: post.excerpt || '',
+        content_html: post.content_html || '',
+        feature_image_url: post.feature_image_url || '',
+        status: post.status || 'draft'
+      });
+    } else {
+      setEditingBlog(null);
+      setBlogForm({
+        title: '',
+        slug: '',
+        excerpt: '',
+        content_html: '',
+        feature_image_url: '',
+        status: 'draft'
+      });
+    }
+    setShowBlogForm(true);
+  };
+
+  const execEditor = (cmd, value = null) => {
+    if (typeof document === 'undefined') return;
+    if (editorRef.current) editorRef.current.focus();
+    document.execCommand(cmd, false, value);
+    if (editorRef.current) {
+      setBlogForm((prev) => ({ ...prev, content_html: editorRef.current.innerHTML }));
+    }
+  };
+
+  const handleEditorInput = () => {
+    setBlogForm((prev) => ({ ...prev, content_html: editorRef.current?.innerHTML || '' }));
+  };
+
+  const handleBlogImageUpload = async (file) => {
+    if (!file) return;
+    try {
+      setBlogImageUploading(true);
+      const r = await api.uploadSABlogImage(file);
+      setBlogForm((prev) => ({ ...prev, feature_image_url: r.data?.image_url || '' }));
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      setBlogImageUploading(false);
+    }
+  };
+
+  const saveBlogPost = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...blogForm,
+      content_html: editorRef.current?.innerHTML || blogForm.content_html || ''
+    };
+    if (!payload.title || !payload.content_html) {
+      alert('Judul dan konten wajib diisi');
+      return;
+    }
+
+    try {
+      if (editingBlog) {
+        await api.updateSABlogPost(editingBlog.id, payload);
+      } else {
+        await api.createSABlogPost(payload);
+      }
+      resetBlogForm();
+      loadBlogPosts();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  const removeBlogPost = async (id) => {
+    if (!confirm('Hapus artikel ini?')) return;
+    try {
+      await api.deleteSABlogPost(id);
+      loadBlogPosts();
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Spinner /></div>;
 
-  const tabs = [{ id: 'dashboard', l: '📊 Dashboard' }, { id: 'companies', l: '🏢 Perusahaan' }, { id: 'plans', l: '📦 Paket' }, { id: 'banks', l: '🏦 Bank' }, { id: 'payments', l: '💰 Pembayaran' }];
+  const tabs = [{ id: 'dashboard', l: '📊 Dashboard' }, { id: 'companies', l: '🏢 Perusahaan' }, { id: 'plans', l: '📦 Paket' }, { id: 'banks', l: '🏦 Bank' }, { id: 'payments', l: '💰 Pembayaran' }, { id: 'blog', l: '📝 Blog' }];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -347,6 +472,173 @@ export default function SuperadminPage() {
                   </tr>
                 ))}</tbody></table>
               ) : <div className="py-16 text-center text-gray-500">💰 Belum ada pembayaran</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Blog */}
+        {tab === 'blog' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">📝 Kelola Blog</h2>
+              <button onClick={() => openBlogForm()} className="bg-wa-primary text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Tulis Artikel</button>
+            </div>
+
+            {showBlogForm && (
+              <form onSubmit={saveBlogPost} className="bg-white rounded-2xl border p-6 space-y-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-bold">{editingBlog ? '✏️ Edit Artikel' : '➕ Artikel Baru'}</h3>
+                  <button type="button" onClick={resetBlogForm} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Judul Artikel *</label>
+                    <input
+                      required
+                      value={blogForm.title}
+                      onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl border text-sm"
+                      placeholder="Contoh: Cara Meningkatkan Disiplin Absensi"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Slug (opsional)</label>
+                    <input
+                      value={blogForm.slug}
+                      onChange={(e) => setBlogForm({ ...blogForm, slug: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl border text-sm"
+                      placeholder="auto jika kosong"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Excerpt</label>
+                  <textarea
+                    rows={2}
+                    value={blogForm.excerpt}
+                    onChange={(e) => setBlogForm({ ...blogForm, excerpt: e.target.value })}
+                    className="w-full px-3 py-2.5 rounded-xl border text-sm"
+                    placeholder="Ringkasan artikel..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Feature Image</label>
+                  <div className="flex flex-col md:flex-row gap-3 md:items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleBlogImageUpload(e.target.files?.[0])}
+                      className="text-sm"
+                    />
+                    {blogImageUploading && <span className="text-xs text-gray-500">Uploading...</span>}
+                    {blogForm.feature_image_url && <code className="text-xs bg-gray-100 px-2 py-1 rounded break-all">{blogForm.feature_image_url}</code>}
+                  </div>
+                  {blogForm.feature_image_url && (
+                    <img
+                      src={`${process.env.NEXT_PUBLIC_API_URL || ''}${blogForm.feature_image_url}`}
+                      alt="Feature"
+                      className="mt-3 w-full max-w-md rounded-xl border"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Konten Artikel *</label>
+                  <div className="border rounded-xl overflow-hidden">
+                    <div className="flex flex-wrap gap-2 p-2 border-b bg-gray-50">
+                      <button type="button" onClick={() => execEditor('bold')} className="px-2 py-1 text-xs rounded bg-white border">B</button>
+                      <button type="button" onClick={() => execEditor('italic')} className="px-2 py-1 text-xs rounded bg-white border">I</button>
+                      <button type="button" onClick={() => execEditor('underline')} className="px-2 py-1 text-xs rounded bg-white border">U</button>
+                      <button type="button" onClick={() => execEditor('insertUnorderedList')} className="px-2 py-1 text-xs rounded bg-white border">• List</button>
+                      <button type="button" onClick={() => execEditor('insertOrderedList')} className="px-2 py-1 text-xs rounded bg-white border">1. List</button>
+                      <button type="button" onClick={() => execEditor('formatBlock', '<h2>')} className="px-2 py-1 text-xs rounded bg-white border">H2</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = prompt('Masukkan URL:');
+                          if (url) execEditor('createLink', url);
+                        }}
+                        className="px-2 py-1 text-xs rounded bg-white border"
+                      >
+                        Link
+                      </button>
+                    </div>
+                    <div
+                      ref={editorRef}
+                      contentEditable
+                      suppressContentEditableWarning
+                      onInput={handleEditorInput}
+                      className="min-h-[220px] p-4 text-sm focus:outline-none"
+                      dangerouslySetInnerHTML={{ __html: blogForm.content_html || '' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Status</label>
+                    <select
+                      value={blogForm.status}
+                      onChange={(e) => setBlogForm({ ...blogForm, status: e.target.value })}
+                      className="w-full px-3 py-2.5 rounded-xl border text-sm bg-white"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="published">Published</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button type="submit" className="bg-wa-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-wa-dark">
+                    {editingBlog ? '💾 Update Artikel' : '💾 Simpan Artikel'}
+                  </button>
+                  <button type="button" onClick={resetBlogForm} className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-semibold">Batal</button>
+                </div>
+              </form>
+            )}
+
+            <div className="bg-white rounded-2xl border overflow-hidden">
+              {blogLoading ? (
+                <div className="py-16 text-center text-gray-500">Memuat artikel...</div>
+              ) : blogPosts.length > 0 ? (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Artikel</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Slug</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Update</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {blogPosts.map((post) => (
+                      <tr key={post.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-medium">{post.title}</p>
+                          <p className="text-xs text-gray-500">{post.excerpt || '-'}</p>
+                        </td>
+                        <td className="px-4 py-4 text-xs font-mono">{post.slug}</td>
+                        <td className="px-4 py-4 text-center">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${post.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {post.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-xs text-gray-600">{new Date(post.updated_at || post.created_at).toLocaleString('id-ID')}</td>
+                        <td className="px-6 py-4 text-right">
+                          <button onClick={() => openBlogForm(post)} className="text-wa-primary text-xs hover:bg-wa-light px-3 py-1 rounded-lg mr-2">✏️ Edit</button>
+                          <button onClick={() => removeBlogPost(post.id)} className="text-red-500 text-xs hover:bg-red-50 px-3 py-1 rounded-lg">Hapus</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-16 text-center text-gray-500">📝 Belum ada artikel</div>
+              )}
             </div>
           </div>
         )}

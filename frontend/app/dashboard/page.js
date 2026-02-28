@@ -184,7 +184,7 @@ export default function DashboardPage() {
             onClick={() => { setTab('overview'); setSubTab('list'); setSelectedAttendanceId(null); }}
             className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
               tab === 'overview'
-                ? 'bg-gradient-to-r from-wa-primary to-wa-dark text-white shadow-md'
+                ? 'bg-wa-light text-wa-dark border border-wa-primary/30 shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -194,7 +194,7 @@ export default function DashboardPage() {
             onClick={() => { setTab('attendance'); setSubTab('list'); setSelectedAttendanceId(null); }}
             className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
               tab === 'attendance'
-                ? 'bg-gradient-to-r from-wa-primary to-wa-dark text-white shadow-md'
+                ? 'bg-wa-light text-wa-dark border border-wa-primary/30 shadow-sm'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >

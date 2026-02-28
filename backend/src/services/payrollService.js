@@ -176,7 +176,7 @@ class PayrollService {
 
     // Get approved overtime
     const otResult = await query(`
-      SELECT COALESCE(SUM(duration_hours), 0) as total_overtime_hours
+      SELECT COALESCE(SUM(COALESCE(duration_minutes, 0)) / 60.0, 0) as total_overtime_hours
       FROM overtime
       WHERE employee_id = $1
         AND date >= $2::date
