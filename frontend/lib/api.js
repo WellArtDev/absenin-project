@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
 
 class ApiClient {
   constructor() { this.baseUrl = API_URL; }
@@ -116,8 +116,18 @@ class ApiClient {
       headers: { ...(token && { Authorization: `Bearer ${token}` }) },
       body: fd
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Gagal upload gambar');
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+    if (response.status === 401) {
+      this.removeToken();
+      if (typeof window !== 'undefined') window.location.href = '/login';
+      throw new Error('Sesi berakhir.');
+    }
+    if (!response.ok) throw new Error(data?.message || 'Gagal upload gambar');
     return data;
   }
 

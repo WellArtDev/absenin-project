@@ -7,6 +7,13 @@ import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import api from '@/lib/api';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
+const toImageUrl = (url) => {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 const Spinner = () => <div className="py-16 text-center"><div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>;
 const OtBadge = ({ status }) => {
   const c = { pending: 'bg-yellow-100 text-yellow-700', waiting_confirmation: 'bg-blue-100 text-blue-700', confirmed: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', expired: 'bg-gray-100 text-gray-700' };
@@ -563,7 +570,7 @@ export default function SuperadminPage() {
                   </div>
                   {blogForm.feature_image_url && (
                     <img
-                      src={`${process.env.NEXT_PUBLIC_API_URL || ''}${blogForm.feature_image_url}`}
+                      src={toImageUrl(blogForm.feature_image_url)}
                       alt="Feature"
                       className="mt-3 w-full max-w-md rounded-xl border"
                     />

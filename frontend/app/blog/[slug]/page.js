@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,27 +75,44 @@ export default async function BlogDetailPage({ params }) {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <article className="max-w-3xl mx-auto px-4 py-10">
-        <header className="mb-6">
-          <p className="text-sm text-gray-500">
+    <main className="min-h-screen bg-[#f5f5f5] text-[#111111]">
+      <header className="bg-[#111111] text-white">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="text-xl font-bold tracking-wide">ABSENIN</Link>
+          <nav className="flex items-center gap-5 text-sm uppercase tracking-widest">
+            <Link href="/" className="opacity-80 hover:opacity-100">Home</Link>
+            <Link href="/blog" className="opacity-100">Newsroom</Link>
+            <Link href="/register" className="bg-white text-black px-3 py-1.5 text-xs font-semibold">Start</Link>
+          </nav>
+        </div>
+      </header>
+
+      <article className="max-w-5xl mx-auto px-4 py-10">
+        <Link href="/blog" className="inline-flex text-xs uppercase tracking-[0.2em] text-gray-500 hover:text-black mb-6">
+          ← Back To Newsroom
+        </Link>
+
+        <header className="mb-8">
+          <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
             {new Date(post.published_at || post.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' })}
             {post.author_name ? ` · ${post.author_name}` : ''}
           </p>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">{post.title}</h1>
-          {post.excerpt && <p className="text-gray-600 mt-3 text-lg">{post.excerpt}</p>}
+          <h1 className="text-4xl md:text-6xl font-black leading-tight mt-3">{post.title}</h1>
+          {post.excerpt && <p className="text-gray-700 mt-5 text-lg max-w-3xl leading-8">{post.excerpt}</p>}
         </header>
 
         {post.feature_image_url && (
-          <img
-            src={toImageUrl(post.feature_image_url)}
-            alt={post.title}
-            className="w-full rounded-2xl border mb-8 object-cover"
-          />
+          <div className="mb-8 bg-white border border-gray-200">
+            <img
+              src={toImageUrl(post.feature_image_url)}
+              alt={post.title}
+              className="w-full max-h-[560px] object-cover"
+            />
+          </div>
         )}
 
         <div
-          className="prose prose-gray max-w-none bg-white rounded-2xl border p-6 md:p-8"
+          className="prose prose-gray max-w-none bg-white border border-gray-200 p-6 md:p-10"
           dangerouslySetInnerHTML={{ __html: post.content_html }}
         />
       </article>

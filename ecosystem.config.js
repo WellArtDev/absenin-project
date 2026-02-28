@@ -22,8 +22,8 @@ module.exports = {
     {
       name: 'absenin-frontend',
       cwd: '/var/www/absenin/frontend',
-      script: 'node_modules/.bin/next',
-      args: 'start -p 3000',
+      script: '.next/standalone/server.js',
+      interpreter: 'node',
       exec_mode: 'fork',
       instances: 1,
       autorestart: true,

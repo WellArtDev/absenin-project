@@ -14,17 +14,17 @@ const blogStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, blogUploadDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
+    const safeExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'].includes(ext) ? ext : '.jpg';
     cb(null, `blog_${Date.now()}_${Math.round(Math.random() * 1e9)}${safeExt}`);
   }
 });
 
 const uploadBlogImage = multer({
   storage: blogStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const ok = /^image\/(jpeg|png|webp)$/i.test(file.mimetype || '');
-    cb(ok ? null : new Error('Format gambar harus JPG/PNG/WEBP'), ok);
+    const ok = /^image\/(jpeg|jpg|png|webp|gif|svg\+xml)$/i.test(file.mimetype || '');
+    cb(ok ? null : new Error('Format gambar harus JPG/PNG/WEBP/GIF/SVG'), ok);
   }
 });
 
@@ -293,15 +293,23 @@ router.get('/blog/posts/:id', async (req, res) => {
   }
 });
 
-router.post('/blog/upload-image', uploadBlogImage.single('image'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ success: false, message: 'File gambar wajib diisi.' });
+router.post('/blog/upload-image', (req, res) => {
+  uploadBlogImage.single('image')(req, res, (error) => {
+    if (error) {
+      console.error('Blog image upload error:', error.message);
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ success: false, message: 'Ukuran gambar maksimal 10MB.' });
+      }
+      return res.status(400).json({ success: false, message: error.message || 'Gagal upload gambar.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'File gambar wajib diisi.' });
+    }
+
     const imageUrl = `/uploads/blog/${req.file.filename}`;
-    res.json({ success: true, data: { image_url: imageUrl } });
-  } catch (error) {
-    console.error(error);
-    res.status(400).json({ success: false, message: error.message || 'Gagal upload gambar.' });
-  }
+    return res.json({ success: true, data: { image_url: imageUrl } });
+  });
 });
 
 router.post('/blog/posts', async (req, res) => {
