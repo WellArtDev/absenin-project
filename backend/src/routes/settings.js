@@ -66,10 +66,30 @@ router.post('/test-wa', async (req, res) => {
       return res.json({ success: false, message: 'WA API belum dikonfigurasi.' });
     }
     const fetch = require('node-fetch');
-    const r = await fetch(settings.rows[0].wa_api_url.replace('/send', '/device'), {
+    const deviceUrl = settings.rows[0].wa_api_url.replace('/send', '/device');
+
+    // Try GET first (common for device info endpoint)
+    let r = await fetch(deviceUrl, {
+      method: 'GET',
       headers: { 'Authorization': settings.rows[0].wa_api_token },
       timeout: 10000,
     });
+
+    // If GET fails with 405, try POST
+    if (r.status === 405) {
+      r = await fetch(deviceUrl, {
+        method: 'POST',
+        headers: { 'Authorization': settings.rows[0].wa_api_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+        timeout: 10000,
+      });
+    }
+
+    if (!r.ok) {
+      const text = await r.text();
+      return res.json({ success: false, message: `HTTP ${r.status}: ${text.substring(0, 200)}` });
+    }
+
     const data = await r.json();
     res.json({ success: true, message: 'Koneksi WA berhasil!', data });
   } catch (error) {
