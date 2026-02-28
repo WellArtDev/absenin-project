@@ -17,6 +17,8 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use('/uploads/selfies', express.static(path.join(__dirname, '../uploads/selfies')));
 app.use('/uploads/blog', express.static(path.join(__dirname, '../uploads/blog')));
+app.use('/api/uploads/selfies', express.static(path.join(__dirname, '../uploads/selfies')));
+app.use('/api/uploads/blog', express.static(path.join(__dirname, '../uploads/blog')));
 
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200, standardHeaders: true, legacyHeaders: false });
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });

@@ -120,7 +120,7 @@ export default function LandingPage() {
             <div className="fu">
               <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'#f0f9ff',border:'1.5px solid #bae6fd',borderRadius:100,padding:'7px 18px',marginBottom:28}}>
                 <span style={{width:8,height:8,borderRadius:'50%',background:'#25D366',display:'inline-block',animation:'pulse 2s infinite'}}/>
-                <span style={{fontSize:13,fontWeight:700,color:'#0369a1'}}>Multi-Tenant SaaS · WA Per-Perusahaan · v3.0</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#0369a1'}}>Multi-Tenant SaaS · WA Per-Perusahaan · </span>
               </div>
               <h1 style={{fontSize:'clamp(36px,4.5vw,64px)',fontWeight:900,color:'#0f172a',lineHeight:1.06,letterSpacing:'-1.5px',marginBottom:24}}>
                 #1st Absensi Karyawan<br/><span className="gt">via WhatsApp,</span><br/>Tanpa Ribet.

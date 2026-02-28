@@ -11,7 +11,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
 const toImageUrl = (url) => {
   if (!url) return '';
   if (/^https?:\/\//i.test(url)) return url;
-  return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  const normalized = url.startsWith('/') ? url : `/${url}`;
+  const migrated = normalized.startsWith('/uploads/blog/')
+    ? normalized.replace('/uploads/blog/', '/api/uploads/blog/')
+    : normalized;
+  return `${API_BASE_URL}${migrated}`;
 };
 
 const Spinner = () => <div className="py-16 text-center"><div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div></div>;

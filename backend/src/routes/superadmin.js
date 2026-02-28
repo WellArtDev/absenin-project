@@ -307,7 +307,7 @@ router.post('/blog/upload-image', (req, res) => {
       return res.status(400).json({ success: false, message: 'File gambar wajib diisi.' });
     }
 
-    const imageUrl = `/uploads/blog/${req.file.filename}`;
+    const imageUrl = `/api/uploads/blog/${req.file.filename}`;
     return res.json({ success: true, data: { image_url: imageUrl } });
   });
 });
