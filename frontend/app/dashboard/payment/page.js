@@ -313,6 +313,7 @@ export default function PaymentPage() {
           </div>
         </div>
       )}
+    </div>
     </>
   );
 }
