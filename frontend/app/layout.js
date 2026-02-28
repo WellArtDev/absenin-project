@@ -1,5 +1,5 @@
 import './globals.css';
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://absenin.com';
 export const metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -7,6 +7,11 @@ export const metadata = {
     template: '%s | Absenin'
   },
   description: 'Sistem absensi karyawan lengkap: selfie, GPS, lembur, cuti, multi-tenant via WhatsApp.',
+  icons: {
+    icon: '/logo-absenin.svg',
+    shortcut: '/logo-absenin.svg',
+    apple: '/logo-absenin.svg'
+  },
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',

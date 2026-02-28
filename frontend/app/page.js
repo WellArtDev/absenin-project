@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://absenin.com';
 
 export default function LandingPage() {
   const [vis, setVis] = useState(false);
@@ -40,13 +41,38 @@ export default function LandingPage() {
     fetchPlans();
   }, [mounted]);
 
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Absenin',
+    url: APP_URL,
+    logo: `${APP_URL}/logo-absenin.svg`,
+    description: 'Sistem absensi karyawan via WhatsApp dengan selfie, GPS, lembur, dan multi-tenant.',
+    sameAs: []
+  };
+
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Absenin',
+    url: APP_URL,
+    inLanguage: 'id-ID',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${APP_URL}/blog?search={search_term_string}`,
+      'query-input': 'required name=search_term_string'
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">A</span></div>
+              <div className="w-8 h-8 bg-white rounded-lg p-1 border border-brand-100 flex items-center justify-center">
+                <img src="/logo-absenin.svg" alt="Absenin Logo" className="w-full h-full object-contain" />
+              </div>
               <span className="text-xl font-bold text-gray-900">Absenin</span>
               <span className="text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full font-medium">v3</span>
             </div>
@@ -62,8 +88,8 @@ export default function LandingPage() {
       <nav style={{background:'rgba(255,255,255,.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid #f1f5f9',position:'sticky',top:0,zIndex:50}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64}}>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:34,height:34,borderRadius:10,background:'linear-gradient(135deg,#25D366,#075E54)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(37,211,102,.4)'}}>
-              <span style={{color:'#fff',fontWeight:900,fontSize:15}}>A</span>
+            <div style={{width:34,height:34,borderRadius:10,background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(37,211,102,.25)',padding:'5px',border:'1px solid #d1fae5'}}>
+              <img src="/logo-absenin.svg" alt="Absenin Logo" style={{width:'100%',height:'100%',objectFit:'contain'}} />
             </div>
             <span style={{fontSize:20,fontWeight:900,color:'#0f172a',letterSpacing:'-0.5px'}}>Absenin</span>
           </div>
@@ -508,6 +534,14 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
     </div>
   );
 }
