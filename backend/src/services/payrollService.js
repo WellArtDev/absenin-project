@@ -1,8 +1,34 @@
 const { query } = require('../config/db');
 
 class PayrollService {
+  async ensurePayrollColumns() {
+    // Make payroll module forward-compatible on older DBs.
+    await query(`
+      ALTER TABLE IF EXISTS payroll_settings
+      ADD COLUMN IF NOT EXISTS bpjs_health_employee_percent DECIMAL(5,2) DEFAULT 0
+    `);
+    await query(`
+      ALTER TABLE IF EXISTS payroll_settings
+      ADD COLUMN IF NOT EXISTS bpjs_employment_employee_percent DECIMAL(5,2) DEFAULT 0
+    `);
+    await query(`
+      ALTER TABLE IF EXISTS payroll_settings
+      ADD COLUMN IF NOT EXISTS pph21_percent DECIMAL(5,2) DEFAULT 0
+    `);
+    await query(`
+      ALTER TABLE IF EXISTS payroll_records
+      ADD COLUMN IF NOT EXISTS bpjs_deductions DECIMAL(15,2) DEFAULT 0
+    `);
+    await query(`
+      ALTER TABLE IF EXISTS payroll_records
+      ADD COLUMN IF NOT EXISTS pph21_deductions DECIMAL(15,2) DEFAULT 0
+    `);
+  }
+
   // Get payroll settings for a company
   async getPayrollSettings(companyId) {
+    await this.ensurePayrollColumns();
+
     const result = await query(`
       SELECT * FROM payroll_settings WHERE company_id = $1
     `, [companyId]);
@@ -10,8 +36,16 @@ class PayrollService {
     if (result.rows.length === 0) {
       // Create default settings
       const inserted = await query(`
-        INSERT INTO payroll_settings (company_id, overtime_rate_per_hour, late_deduction_per_minute, absent_deduction_per_day)
-        VALUES ($1, 0, 0, 0)
+        INSERT INTO payroll_settings (
+          company_id,
+          overtime_rate_per_hour,
+          late_deduction_per_minute,
+          absent_deduction_per_day,
+          bpjs_health_employee_percent,
+          bpjs_employment_employee_percent,
+          pph21_percent
+        )
+        VALUES ($1, 0, 0, 0, 0, 0, 0)
         RETURNING *
       `, [companyId]);
       return inserted.rows[0];
@@ -22,26 +56,55 @@ class PayrollService {
 
   // Update payroll settings
   async updatePayrollSettings(companyId, settings) {
-    const { overtime_rate_per_hour, late_deduction_per_minute, absent_deduction_per_day, include_weekends, cutoff_day } = settings;
+    await this.ensurePayrollColumns();
+
+    const {
+      overtime_rate_per_hour,
+      late_deduction_per_minute,
+      absent_deduction_per_day,
+      include_weekends,
+      cutoff_day,
+      bpjs_health_employee_percent,
+      bpjs_employment_employee_percent,
+      pph21_percent
+    } = settings;
 
     const result = await query(`
-      INSERT INTO payroll_settings (company_id, overtime_rate_per_hour, late_deduction_per_minute, absent_deduction_per_day, include_weekends, cutoff_day)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO payroll_settings (
+        company_id, overtime_rate_per_hour, late_deduction_per_minute, absent_deduction_per_day,
+        include_weekends, cutoff_day, bpjs_health_employee_percent, bpjs_employment_employee_percent, pph21_percent
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (company_id)
       DO UPDATE SET
         overtime_rate_per_hour = COALESCE(EXCLUDED.overtime_rate_per_hour, payroll_settings.overtime_rate_per_hour),
         late_deduction_per_minute = COALESCE(EXCLUDED.late_deduction_per_minute, payroll_settings.late_deduction_per_minute),
         absent_deduction_per_day = COALESCE(EXCLUDED.absent_deduction_per_day, payroll_settings.absent_deduction_per_day),
         include_weekends = COALESCE(EXCLUDED.include_weekends, payroll_settings.include_weekends),
-        cutoff_day = COALESCE(EXCLUDED.cutoff_day, payroll_settings.cutoff_day)
+        cutoff_day = COALESCE(EXCLUDED.cutoff_day, payroll_settings.cutoff_day),
+        bpjs_health_employee_percent = COALESCE(EXCLUDED.bpjs_health_employee_percent, payroll_settings.bpjs_health_employee_percent),
+        bpjs_employment_employee_percent = COALESCE(EXCLUDED.bpjs_employment_employee_percent, payroll_settings.bpjs_employment_employee_percent),
+        pph21_percent = COALESCE(EXCLUDED.pph21_percent, payroll_settings.pph21_percent)
       RETURNING *
-    `, [companyId, overtime_rate_per_hour, late_deduction_per_minute, absent_deduction_per_day, include_weekends, cutoff_day]);
+    `, [
+      companyId,
+      overtime_rate_per_hour,
+      late_deduction_per_minute,
+      absent_deduction_per_day,
+      include_weekends,
+      cutoff_day,
+      bpjs_health_employee_percent,
+      bpjs_employment_employee_percent,
+      pph21_percent
+    ]);
 
     return result.rows[0];
   }
 
   // Calculate payroll for an employee for a period
   async calculateEmployeePayroll(employeeId, month, year, companyId) {
+    await this.ensurePayrollColumns();
+
     // Get employee with position
     const empResult = await query(`
       SELECT e.*, p.base_salary, p.name as position_name
@@ -120,31 +183,39 @@ class PayrollService {
     const overtimeRate = parseFloat(settings.overtime_rate_per_hour) || 0;
     const lateDeductionRate = parseFloat(settings.late_deduction_per_minute) || 0;
     const absentDeductionRate = parseFloat(settings.absent_deduction_per_day) || 0;
+    const bpjsHealthRate = parseFloat(settings.bpjs_health_employee_percent) || 0;
+    const bpjsEmploymentRate = parseFloat(settings.bpjs_employment_employee_percent) || 0;
+    const pph21Rate = parseFloat(settings.pph21_percent) || 0;
 
     const overtimePay = overtimeHours * overtimeRate;
     const lateDeductions = totalLateMinutes * lateDeductionRate;
     const absentDeductions = absentDays * absentDeductionRate;
+    const bpjsDeductions = baseSalary * ((bpjsHealthRate + bpjsEmploymentRate) / 100);
 
     const totalEarnings = baseSalary + overtimePay;
-    const totalDeductions = lateDeductions + absentDeductions;
+    const taxableIncome = Math.max(totalEarnings - lateDeductions - absentDeductions - bpjsDeductions, 0);
+    const pph21Deductions = taxableIncome * (pph21Rate / 100);
+    const totalDeductions = lateDeductions + absentDeductions + bpjsDeductions + pph21Deductions;
     const netSalary = totalEarnings - totalDeductions;
 
     return {
-      employee_id: employeeId,
+      employee_ref_id: employeeId,
       employee_name: employee.name,
-      employee_id: employee.employee_id,
+      employee_id: employee.employee_code,
       position: employee.position_name,
       base_salary: baseSalary,
-      overtime_hours,
+      overtime_hours: overtimeHours,
       overtime_pay: overtimePay,
       allowance: 0,
       bonus: 0,
-      late_deductions,
-      absent_deductions,
+      late_deductions: lateDeductions,
+      absent_deductions: absentDeductions,
+      bpjs_deductions: bpjsDeductions,
+      pph21_deductions: pph21Deductions,
       other_deductions: 0,
-      total_deductions,
-      total_earnings,
-      net_salary,
+      total_deductions: totalDeductions,
+      total_earnings: totalEarnings,
+      net_salary: netSalary,
       summary: {
         present_days: presentDays,
         absent_days: absentDays,
@@ -182,6 +253,8 @@ class PayrollService {
 
   // Calculate payroll for all employees in a period
   async calculatePeriodPayroll(periodId, companyId) {
+    await this.ensurePayrollColumns();
+
     // Get period info
     const periodResult = await query(`
       SELECT * FROM payroll_periods WHERE id = $1 AND company_id = $2
@@ -210,9 +283,9 @@ class PayrollService {
       const recordResult = await query(`
         INSERT INTO payroll_records (
           period_id, employee_id, base_salary, overtime_hours, overtime_pay,
-          allowance, bonus, late_deductions, absent_deductions, other_deductions,
+          allowance, bonus, late_deductions, absent_deductions, bpjs_deductions, pph21_deductions, other_deductions,
           total_deductions, total_earnings, net_salary, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         ON CONFLICT (employee_id, period_id)
         DO UPDATE SET
           base_salary = EXCLUDED.base_salary,
@@ -220,13 +293,16 @@ class PayrollService {
           overtime_pay = EXCLUDED.overtime_pay,
           late_deductions = EXCLUDED.late_deductions,
           absent_deductions = EXCLUDED.absent_deductions,
+          bpjs_deductions = EXCLUDED.bpjs_deductions,
+          pph21_deductions = EXCLUDED.pph21_deductions,
           total_deductions = EXCLUDED.total_deductions,
           total_earnings = EXCLUDED.total_earnings,
           net_salary = EXCLUDED.net_salary
         RETURNING *
       `, [periodId, emp.id, payroll.base_salary, payroll.overtime_hours, payroll.overtime_pay,
           payroll.allowance, payroll.bonus, payroll.late_deductions, payroll.absent_deductions,
-          payroll.other_deductions, payroll.total_deductions, payroll.total_earnings, payroll.net_salary,
+          payroll.bpjs_deductions, payroll.pph21_deductions, payroll.other_deductions,
+          payroll.total_deductions, payroll.total_earnings, payroll.net_salary,
           `Present: ${payroll.summary.present_days} days, Late: ${Math.round(payroll.summary.total_late_minutes)} min, Absent: ${payroll.summary.absent_days} days`
       ]);
 
@@ -248,10 +324,12 @@ class PayrollService {
 
   // Get payroll records for a period
   async getPayrollRecords(periodId, companyId) {
+    await this.ensurePayrollColumns();
+
     const result = await query(`
       SELECT pr.*,
         e.name as employee_name,
-        e.employee_id as employee_code,
+        e.employee_code as employee_code,
         p.name as position_name,
         d.name as division_name
       FROM payroll_records pr
@@ -283,6 +361,8 @@ class PayrollService {
 
   // Update payroll record (for manual adjustments)
   async updatePayrollRecord(recordId, companyId, updates) {
+    await this.ensurePayrollColumns();
+
     const { allowance, bonus, other_deductions, notes } = updates;
 
     const recResult = await query(`

@@ -43,12 +43,12 @@ class NotificationService {
       if (!manager) return { skipped: true, reason: 'No manager configured' };
 
       // Get employee info
-      const empResult = await query('SELECT name, employee_id FROM employees WHERE id = $1', [employeeId]);
+      const empResult = await query('SELECT name, employee_code FROM employees WHERE id = $1', [employeeId]);
       if (empResult.rows.length === 0) return { skipped: true, reason: 'Employee not found' };
       const employee = empResult.rows[0];
 
       // Send WhatsApp message
-      const fullMessage = `🔔 *NOTIFIKASI ABSENIN*\n\n${message}\n\n_Karyawan: ${employee.name} (${employee.employee_id || '-'})_`;
+      const fullMessage = `🔔 *NOTIFIKASI ABSENIN*\n\n${message}\n\n_Karyawan: ${employee.name} (${employee.employee_code || '-'})_`;
       const result = await sendWA(companyId, manager.phone, fullMessage);
 
       // Log the notification
@@ -116,7 +116,7 @@ class NotificationService {
     const result = await query(`
       SELECT nl.*,
         e.name as employee_name,
-        e.employee_id as employee_code
+        e.employee_code as employee_code
       FROM notification_logs nl
       JOIN employees e ON e.id = nl.employee_id
       ${whereClause}

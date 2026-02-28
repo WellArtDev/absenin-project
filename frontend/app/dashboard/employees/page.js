@@ -182,6 +182,9 @@ export default function EmployeesPage() {
           <button onClick={() => router.push('/dashboard/divisions')} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
             🏢 Divisi
           </button>
+          <button onClick={() => router.push('/dashboard/jabatan')} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
+            💼 Jabatan
+          </button>
           <button onClick={handleExport} className="bg-gray-100 text-gray-700 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200">
             📤 Export CSV
           </button>

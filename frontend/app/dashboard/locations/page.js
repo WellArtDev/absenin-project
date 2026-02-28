@@ -25,12 +25,13 @@ export default function LocationsPage() {
   });
 
   const [currentPosition, setCurrentPosition] = useState(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
   const [checkins, setCheckins] = useState([]);
   const [showCheckins, setShowCheckins] = useState(false);
 
   useEffect(() => {
     loadData();
-    getCurrentPosition();
   }, []);
 
   const loadData = async () => {
@@ -50,30 +51,58 @@ export default function LocationsPage() {
   };
 
   const getCurrentPosition = () => {
-    if (typeof window !== 'undefined' && navigator.geolocation) {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined' || !navigator.geolocation) {
+        reject(new Error('Browser tidak mendukung geolocation'));
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setCurrentPosition({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude
-          });
-        },
-        (err) => {
-          console.error('Geolocation error:', err);
-        }
+        (pos) => resolve(pos),
+        (err) => reject(err),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
       );
-    }
+    });
   };
 
-  const handleUseCurrentLocation = () => {
+  const getGeoErrorMessage = (err) => {
+    if (!err) return 'Gagal mengambil lokasi saat ini';
+    if (err.code === 1) return 'Izin lokasi ditolak. Aktifkan permission lokasi di browser.';
+    if (err.code === 2) return 'Lokasi tidak tersedia. Pastikan GPS/jaringan aktif.';
+    if (err.code === 3) return 'Permintaan lokasi timeout. Coba lagi.';
+    return err.message || 'Gagal mengambil lokasi saat ini';
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setGeoError('');
+    setGeoLoading(true);
+
     if (currentPosition) {
-      setForm({
-        ...form,
+      setForm((prev) => ({
+        ...prev,
         latitude: currentPosition.latitude.toFixed(6),
         longitude: currentPosition.longitude.toFixed(6)
-      });
-    } else {
-      getCurrentPosition();
+      }));
+      setGeoLoading(false);
+      return;
+    }
+
+    try {
+      const pos = await getCurrentPosition();
+      const coords = {
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude
+      };
+      setCurrentPosition(coords);
+      setForm((prev) => ({
+        ...prev,
+        latitude: coords.latitude.toFixed(6),
+        longitude: coords.longitude.toFixed(6)
+      }));
+    } catch (err) {
+      setGeoError(getGeoErrorMessage(err));
+    } finally {
+      setGeoLoading(false);
     }
   };
 
@@ -344,15 +373,14 @@ export default function LocationsPage() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium">Koordinat GPS *</label>
-                    {currentPosition && (
-                      <button
-                        type="button"
-                        onClick={handleUseCurrentLocation}
-                        className="text-xs text-wa-primary hover:underline"
-                      >
-                        📍 Gunakan lokasi saya
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleUseCurrentLocation}
+                      disabled={geoLoading}
+                      className="text-xs text-wa-primary hover:underline disabled:opacity-50"
+                    >
+                      {geoLoading ? '⏳ Mengambil lokasi...' : '📍 Gunakan lokasi saya'}
+                    </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -388,6 +416,9 @@ export default function LocationsPage() {
                       🗺️ Buka Google Maps untuk mendapatkan koordinat
                     </a>
                   </p>
+                  {geoError && (
+                    <p className="text-xs text-red-500 mt-1">{geoError}</p>
+                  )}
                 </div>
 
                 <div>

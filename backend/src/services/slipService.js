@@ -5,7 +5,7 @@ class SlipService {
   async getAttendanceSlip(employeeId, month, year, companyId) {
     // Get employee info
     const employeeResult = await query(`
-      SELECT e.*, d.name as division_name, p.name as position_name
+      SELECT e.*, e.employee_code as employee_id, d.name as division_name, p.name as position_name
       FROM employees e
       LEFT JOIN divisions d ON d.id = e.division_id
       LEFT JOIN positions p ON p.id = e.position_id
@@ -92,7 +92,7 @@ class SlipService {
       SELECT
         e.id,
         e.name,
-        e.employee_id,
+        e.employee_code as employee_id,
         d.name as division_name,
         COUNT(a.id) as total_attendance,
         COUNT(CASE WHEN a.status = 'HADIR' THEN 1 END) as hadir_count,
@@ -103,7 +103,7 @@ class SlipService {
         AND EXTRACT(MONTH FROM a.check_in) = $1
         AND EXTRACT(YEAR FROM a.check_in) = $2
       WHERE e.company_id = $3
-      GROUP BY e.id, e.name, e.employee_id, d.name
+      GROUP BY e.id, e.name, e.employee_code, d.name
       ORDER BY e.name
     `, [month, year, companyId]);
 
@@ -113,7 +113,7 @@ class SlipService {
   // Generate detailed attendance report for all employees
   async getAllEmployeesReport(companyId, month, year) {
     const employees = await query(`
-      SELECT e.id, e.name, e.employee_id, d.name as division_name, p.name as position_name
+      SELECT e.id, e.name, e.employee_code as employee_id, d.name as division_name, p.name as position_name
       FROM employees e
       LEFT JOIN divisions d ON d.id = e.division_id
       LEFT JOIN positions p ON p.id = e.position_id

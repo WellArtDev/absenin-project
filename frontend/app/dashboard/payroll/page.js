@@ -56,7 +56,10 @@ export default function PayrollPage() {
         overtime_rate_per_hour: parseFloat(formData.get('overtime_rate')),
         late_deduction_per_minute: parseFloat(formData.get('late_rate')),
         absent_deduction_per_day: parseFloat(formData.get('absent_rate')),
-        cutoff_day: parseInt(formData.get('cutoff_day'))
+        cutoff_day: parseInt(formData.get('cutoff_day')),
+        bpjs_health_employee_percent: parseFloat(formData.get('bpjs_health_rate')),
+        bpjs_employment_employee_percent: parseFloat(formData.get('bpjs_employment_rate')),
+        pph21_percent: parseFloat(formData.get('pph21_rate'))
       };
 
       await api.updatePayrollSettings(data);
@@ -341,6 +344,8 @@ export default function PayrollPage() {
                         <th className="text-right px-4 py-3 font-medium">Gaji Pokok</th>
                         <th className="text-right px-4 py-3 font-medium">Lembur</th>
                         <th className="text-right px-4 py-3 font-medium">Tunjangan</th>
+                        <th className="text-right px-4 py-3 font-medium text-red-600">BPJS</th>
+                        <th className="text-right px-4 py-3 font-medium text-red-600">PPh 21</th>
                         <th className="text-right px-4 py-3 font-medium text-red-600">Potongan</th>
                         <th className="text-right px-4 py-3 font-medium">Gaji Bersih</th>
                       </tr>
@@ -357,6 +362,8 @@ export default function PayrollPage() {
                           <td className="px-4 py-3 text-right">{formatCurrency(record.base_salary)}</td>
                           <td className="px-4 py-3 text-right text-wa-dark">{formatCurrency(record.overtime_pay)}</td>
                           <td className="px-4 py-3 text-right">{formatCurrency(record.allowance)}</td>
+                          <td className="px-4 py-3 text-right text-red-600">{formatCurrency(record.bpjs_deductions || 0)}</td>
+                          <td className="px-4 py-3 text-right text-red-600">{formatCurrency(record.pph21_deductions || 0)}</td>
                           <td className="px-4 py-3 text-right text-red-600">{formatCurrency(record.total_deductions)}</td>
                           <td className="px-4 py-3 text-right font-bold text-wa-primary">{formatCurrency(record.net_salary)}</td>
                         </tr>
@@ -436,12 +443,54 @@ export default function PayrollPage() {
               </div>
             </div>
 
+            <div className="grid md:grid-cols-3 gap-6">
+              <div>
+                <label htmlFor="bpjs_health_rate" className="block text-sm font-medium mb-2">BPJS Kesehatan (%)</label>
+                <input
+                  id="bpjs_health_rate"
+                  name="bpjs_health_rate"
+                  type="number"
+                  step="0.01"
+                  defaultValue={settings.bpjs_health_employee_percent || 0}
+                  className={IC}
+                  placeholder="Contoh: 1"
+                />
+                <p className="text-xs text-gray-400 mt-1">Persen potongan dari gaji pokok</p>
+              </div>
+              <div>
+                <label htmlFor="bpjs_employment_rate" className="block text-sm font-medium mb-2">BPJS Ketenagakerjaan (%)</label>
+                <input
+                  id="bpjs_employment_rate"
+                  name="bpjs_employment_rate"
+                  type="number"
+                  step="0.01"
+                  defaultValue={settings.bpjs_employment_employee_percent || 0}
+                  className={IC}
+                  placeholder="Contoh: 2"
+                />
+                <p className="text-xs text-gray-400 mt-1">Persen potongan dari gaji pokok</p>
+              </div>
+              <div>
+                <label htmlFor="pph21_rate" className="block text-sm font-medium mb-2">PPh 21 (%)</label>
+                <input
+                  id="pph21_rate"
+                  name="pph21_rate"
+                  type="number"
+                  step="0.01"
+                  defaultValue={settings.pph21_percent || 0}
+                  className={IC}
+                  placeholder="Contoh: 5"
+                />
+                <p className="text-xs text-gray-400 mt-1">Persen dari penghasilan kena pajak periode</p>
+              </div>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <h3 className="text-sm font-bold text-blue-900 mb-2">💡 Cara Kerja Payroll</h3>
               <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
                 <li>Pilih periode (bulan & tahun)</li>
                 <li>Klik "Hitung Payroll" untuk menghitung semua gaji karyawan</li>
-                <li>System otomatis menghitung berdasarkan: gaji pokok + lembur - potongan terlambat/alpha</li>
+                <li>System otomatis menghitung: gaji pokok + lembur - potongan terlambat/alpha/BPJS/PPh21</li>
                 <li>Review dan edit jika diperlukan</li>
                 <li>Export untuk pembayaran</li>
               </ol>

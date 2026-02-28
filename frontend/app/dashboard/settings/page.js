@@ -37,10 +37,6 @@ export default function SettingsPage() {
       d.late_tolerance_minutes = parseInt(fd.get('late_tolerance_minutes')) || 15;
       d.overtime_min_minutes = parseInt(fd.get('overtime_min_minutes')) || 30;
       d.overtime_max_hours = parseInt(fd.get('overtime_max_hours')) || 4;
-      d.office_latitude = fd.get('office_latitude') || '';
-      d.office_longitude = fd.get('office_longitude') || '';
-      d.office_address = fd.get('office_address') || '';
-      d.allowed_radius_meters = parseInt(fd.get('allowed_radius_meters')) || 500;
       d.wa_api_url = fd.get('wa_api_url') || '';
       d.wa_device_number = fd.get('wa_device_number') || '';
       const tok = fd.get('wa_api_token') || '';
@@ -206,30 +202,6 @@ export default function SettingsPage() {
               <input id="overtime_max_hours" name="overtime_max_hours" type="number" min="1" max="12" defaultValue={settings.overtime_max_hours || 4} className={inputCls} />
             </div>
           </div>
-        </div>
-
-        {/* ===== LOKASI KANTOR ===== */}
-        <div className="bg-white rounded-2xl border p-6">
-          <h2 className="text-lg font-bold mb-4">📍 Lokasi Kantor</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="office_latitude" className="block text-sm font-medium mb-2">Latitude</label>
-              <input id="office_latitude" name="office_latitude" type="text" inputMode="decimal" defaultValue={settings.office_latitude || ''} placeholder="-6.2088" className={inputCls} />
-            </div>
-            <div>
-              <label htmlFor="office_longitude" className="block text-sm font-medium mb-2">Longitude</label>
-              <input id="office_longitude" name="office_longitude" type="text" inputMode="decimal" defaultValue={settings.office_longitude || ''} placeholder="106.8456" className={inputCls} />
-            </div>
-            <div>
-              <label htmlFor="allowed_radius_meters" className="block text-sm font-medium mb-2">Radius (meter)</label>
-              <input id="allowed_radius_meters" name="allowed_radius_meters" type="number" min="50" max="10000" defaultValue={settings.allowed_radius_meters || 500} className={inputCls} />
-            </div>
-          </div>
-          <div className="mt-4">
-            <label htmlFor="office_address" className="block text-sm font-medium mb-2">Alamat Kantor</label>
-            <textarea id="office_address" name="office_address" defaultValue={settings.office_address || ''} rows={2} placeholder="Jl. Contoh No. 123, Jakarta" className={inputCls} />
-          </div>
-          <p className="text-xs text-gray-400 mt-2">💡 Buka Google Maps → klik kanan lokasi kantor → copy koordinat</p>
         </div>
 
         {/* ===== WHATSAPP ===== */}

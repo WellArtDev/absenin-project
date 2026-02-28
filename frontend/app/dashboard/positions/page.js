@@ -4,6 +4,7 @@ import api from '@/lib/api';
 
 export default function PositionsPage() {
   const [positions, setPositions] = useState([]);
+  const [divisions, setDivisions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -12,8 +13,12 @@ export default function PositionsPage() {
 
   const load = useCallback(async () => {
     try {
-      const r = await (api.getPositions ? api.getPositions() : api.get('/positions'));
-      setPositions(r.data || []);
+      const [posR, divR] = await Promise.all([
+        (api.getPositions ? api.getPositions() : api.get('/positions')),
+        (api.getDivisions ? api.getDivisions() : api.get('/divisions').catch(() => ({ data: [] }))),
+      ]);
+      setPositions(posR.data || []);
+      setDivisions(divR.data || []);
     } catch (e) { setMsg('❌ ' + e.message); }
     finally { setLoading(false); }
   }, []);
@@ -25,7 +30,12 @@ export default function PositionsPage() {
     setSaving(true); setMsg('');
     try {
       const fd = new FormData(e.target);
-      const data = { name: fd.get('pos_name'), description: fd.get('pos_desc'), level: parseInt(fd.get('pos_level')) || 1 };
+      const data = {
+        name: fd.get('pos_name'),
+        division_id: fd.get('pos_division') || null,
+        description: fd.get('pos_desc'),
+        level: parseInt(fd.get('pos_level')) || 1
+      };
       if (!data.name) throw new Error('Nama jabatan wajib diisi');
 
       if (editing) {
@@ -80,6 +90,13 @@ export default function PositionsPage() {
                 <input id="pos_name" name="pos_name" type="text" required defaultValue={editing?.name || ''} placeholder="Manager, Staff, dll" className={IC} />
               </div>
               <div>
+                <label htmlFor="pos_division" className="block text-sm font-medium mb-1">Divisi</label>
+                <select id="pos_division" name="pos_division" defaultValue={editing?.division_id || ''} className={IC}>
+                  <option value="">-- Pilih Divisi --</option>
+                  {divisions.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
                 <label htmlFor="pos_desc" className="block text-sm font-medium mb-1">Deskripsi</label>
                 <textarea id="pos_desc" name="pos_desc" defaultValue={editing?.description || ''} rows={3} placeholder="Deskripsi jabatan..." className={IC} />
               </div>
@@ -106,6 +123,7 @@ export default function PositionsPage() {
               <div>
                 <h3 className="font-bold">{pos.name}</h3>
                 <p className="text-sm text-gray-500 mt-1">{pos.description || '-'}</p>
+                <p className="text-xs text-gray-500 mt-1">Divisi: {pos.division_name || '-'}</p>
                 <p className="text-xs text-gray-400 mt-2">Level: {pos.level || 1} {pos.employee_count !== undefined ? `• 👥 ${pos.employee_count}` : ''}</p>
               </div>
               <div className="flex gap-2">
