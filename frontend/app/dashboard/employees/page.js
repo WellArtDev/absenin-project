@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import DashboardHeader from '@/components/DashboardHeader';
 
 const DetailRow = ({ label, value, capitalize = false, highlight = false }) => {
   if (!value) return null;

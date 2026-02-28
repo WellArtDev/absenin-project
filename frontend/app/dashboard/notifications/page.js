@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import DashboardHeader from '@/components/DashboardHeader';
 
 export default function NotificationsPage() {
   const router = useRouter();

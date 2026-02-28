@@ -176,77 +176,34 @@ export default function DashboardPage() {
   const todayStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-brand-500 rounded-lg flex items-center justify-center"><span className="text-white font-bold text-xs sm:text-sm">A</span></div>
-              <span className="text-sm sm:text-lg font-bold hidden sm:inline">Absenin</span>
-              <span className="text-[10px] sm:text-xs text-brand-500 font-medium bg-brand-50 px-1.5 sm:px-2 py-0.5 rounded-full">{user?.plan || 'free'}</span>
-            </div>
-            <div className="hidden lg:flex items-center gap-1">
-              {tabs.map(t => {
-                if (t.internal) {
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => { setTab(t.id); setSubTab('list'); setSelectedAttendanceId(null); }}
-                      className={`px-2 sm:px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-brand-50 text-brand-600' : 'text-gray-600 hover:bg-gray-100'}`}
-                    >
-                      {t.l}
-                    </button>
-                  );
-                }
-                return (
-                  <Link
-                    key={t.id}
-                    href={t.path}
-                    className="px-2 sm:px-3 py-2 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100"
-                  >
-                    {t.l}
-                  </Link>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden sm:block text-right"><p className="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-none">{user?.name}</p><p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.company_name}</p></div>
-              <button onClick={() => api.logout()} className="text-xs sm:text-sm text-red-500 hover:text-red-600 font-medium px-2 sm:px-3 py-1.5 rounded-lg hover:bg-red-50">Keluar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Mobile tabs */}
-      <div className="lg:hidden overflow-x-auto border-b bg-white px-2 scrollbar-hide">
-        <div className="flex gap-1 min-w-max">
-          {tabs.map(t => {
-            if (t.internal) {
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => { setTab(t.id); setSubTab('list'); setSelectedAttendanceId(null); }}
-                  className={`px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${tab === t.id ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500'}`}
-                >
-                  {t.l}
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={t.id}
-                href={t.path}
-                className="px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors border-transparent text-gray-500"
-              >
-                {t.l}
-              </Link>
-            );
-          })}
+    <>
+      {/* Tab Navigation for Overview/Attendance */}
+      <div className="mb-6 bg-white rounded-2xl border p-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setTab('overview'); setSubTab('list'); setSelectedAttendanceId(null); }}
+            className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              tab === 'overview'
+                ? 'bg-gradient-to-r from-wa-primary to-wa-dark text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            📊 Overview
+          </button>
+          <button
+            onClick={() => { setTab('attendance'); setSubTab('list'); setSelectedAttendanceId(null); }}
+            className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+              tab === 'attendance'
+                ? 'bg-gradient-to-r from-wa-primary to-wa-dark text-white shadow-md'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            📅 Absensi
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        {/* ======== OVERVIEW ======== */}
+      {/* ======== OVERVIEW ======== */}
         {tab === 'overview' && analytics && (
           <div className="space-y-4 sm:space-y-6 animate-fade-in">
             <div className="text-center sm:text-left">
@@ -458,48 +415,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* Floating Action Button for Mobile */}
-      <div className="fixed bottom-4 right-4 lg:hidden z-50">
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="w-12 h-12 bg-brand-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-600"
-        >
-          ⬆️
-        </button>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex justify-around py-2">
-          {tabs.filter(t => t.internal || t.id === 'employees' || t.id === 'leaves').slice(0, 5).map(t => {
-            if (t.internal) {
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => { setTab(t.id); setSelectedAttendanceId(null); }}
-                  className={`flex flex-col items-center py-2 px-3 text-[10px] font-medium ${
-                    tab === t.id ? 'text-brand-600' : 'text-gray-500'
-                  }`}
-                >
-                  <span className="text-base">{t.l.split(' ')[0]}</span>
-                  <span className="text-[8px]">{t.l.split(' ')[1]}</span>
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={t.id}
-                href={t.path}
-                className="flex flex-col items-center py-2 px-3 text-[10px] font-medium text-gray-500"
-              >
-                <span className="text-base">{t.l.split(' ')[0]}</span>
-                <span className="text-[8px]">{t.l.split(' ')[1]}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    </>
   );
 }

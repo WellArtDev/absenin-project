@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import DashboardHeader from '@/components/DashboardHeader';
 
 export default function BroadcastPage() {
   const router = useRouter();
@@ -96,14 +95,16 @@ export default function BroadcastPage() {
   const IC = "w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-wa-primary/20 focus:border-wa-primary bg-white";
 
   return (
-    <>
-      <DashboardHeader
-        title="📢 Broadcast WhatsApp"
-        subtitle={stats ? `${stats.totalReached} pesan terkirim` : 'Kirim pesan ke karyawan'}
-      />
-      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">📢 Broadcast WhatsApp</h1>
+          <p className="text-sm text-gray-500 mt-1">{stats ? `${stats.totalReached} pesan terkirim` : 'Kirim pesan ke karyawan'}</p>
+        </div>
+      </div>
 
-        {msg && (
+      {msg && (
           <div className={`px-4 py-3 rounded-xl text-sm mb-6 flex justify-between ${
             msg.startsWith('✅')
               ? 'bg-green-50 text-green-700 border border-green-200'
@@ -258,6 +259,5 @@ export default function BroadcastPage() {
         </div>
       </div>
     </div>
-    </>
   );
 }

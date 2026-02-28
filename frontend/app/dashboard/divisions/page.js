@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
-import DashboardHeader from '@/components/DashboardHeader';
 
 export default function DivisionsPage() {
   const [divisions, setDivisions] = useState([]);
@@ -54,17 +53,22 @@ export default function DivisionsPage() {
   if (loading) return <div className="p-6 flex justify-center"><div className="w-10 h-10 border-4 border-red-500 border-t-transparent rounded-full animate-spin"/></div>;
 
   return (
-    <>
-      <DashboardHeader
-        title="🏢 Divisi"
-        subtitle={`${divisions.length} divisi`}
-      />
-      <div className="p-4 md:p-6">
-        <div className="flex justify-end mb-6">
-          <button onClick={() => { setEditing(null); setShowForm(true); }} className="bg-wa-primary text-white px-6 py-3 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Tambah Divisi</button>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">🏢 Divisi</h1>
+          <p className="text-sm text-gray-500 mt-1">{divisions.length} divisi</p>
         </div>
+        <button
+          onClick={() => { setEditing(null); setShowForm(true); }}
+          className="bg-gradient-to-r from-wa-primary to-wa-dark text-white px-6 py-3 rounded-xl text-sm font-semibold hover:shadow-lg transition-all"
+        >
+          + Tambah Divisi
+        </button>
+      </div>
 
-      {msg && <div className={`px-4 py-3 rounded-xl text-sm mb-4 flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}><span>{msg}</span><button onClick={() => setMsg('')}>&times;</button></div>}
+      {msg && <div className={`px-4 py-3 rounded-xl text-sm flex justify-between ${msg.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}><span>{msg}</span><button onClick={() => setMsg('')}>&times;</button></div>}
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={e => e.target === e.currentTarget && setShowForm(false)}>
@@ -111,6 +115,5 @@ export default function DivisionsPage() {
         ))}
       </div>
     </div>
-    </>
   );
 }

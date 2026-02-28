@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import api from '@/lib/api';
-import DashboardHeader from '@/components/DashboardHeader';
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
