@@ -264,6 +264,15 @@ async function runMigrations() {
             'INSERT INTO migration_history (version, description) VALUES ($1, $2) ON CONFLICT DO NOTHING',
             [m.version, m.description]
           );
+        } else if (stepErr.code === '42501' && /must be owner of table/i.test(stepErr.message || '')) {
+          // Kasus umum saat tabel existing dimiliki role DB lain.
+          // Karena migration bersifat idempotent (CREATE IF NOT EXISTS / DROP IF EXISTS),
+          // aman ditandai selesai agar proses startup tidak terblokir.
+          console.log('⏭️  (table dimiliki role lain, dilewati)');
+          await client.query(
+            'INSERT INTO migration_history (version, description) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [m.version, m.description]
+          );
         } else {
           throw stepErr;
         }
