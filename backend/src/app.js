@@ -40,6 +40,8 @@ app.use('/api/selfie', apiLimiter, require('./routes/selfie'));
 app.use('/api/settings', apiLimiter, require('./routes/settings'));
 app.use('/api/broadcast', apiLimiter, require('./routes/broadcast'));
 app.use('/api/payment', apiLimiter, require('./routes/payment'));
+app.use('/api/qr', apiLimiter, require('./routes/qr'));
+app.use('/api/slips', apiLimiter, require('./routes/slips'));
 app.use('/api/shifts', apiLimiter, require('./routes/shifts'));
 app.use('/api/superadmin', apiLimiter, require('./routes/superadmin'));
 

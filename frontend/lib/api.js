@@ -118,6 +118,20 @@ class ApiClient {
   async getEmployeesWithShifts() { return this.request('/api/shifts/employees/list'); }
   async getEmployeeShift(employeeId, date) { return this.request(`/api/shifts/employee/${employeeId}?date=${date}`); }
 
+  // QR Codes
+  async getQRCodes(params = {}) { return this.request(`/api/qr?${new URLSearchParams(params)}`); }
+  async getQR(id) { return this.request(`/api/qr/${id}`); }
+  async createQR(data) { return this.request('/api/qr', { method: 'POST', body: JSON.stringify(data) }); }
+  async updateQR(id, data) { return this.request(`/api/qr/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+  async deleteQR(id) { return this.request(`/api/qr/${id}`, { method: 'DELETE' }); }
+  async scanQR(code, employeeId) { return this.request(`/api/qr/scan/${code}`, { method: 'POST', body: JSON.stringify({ employee_id: employeeId }) }); }
+  async getQRLogs(id) { return this.request(`/api/qr/${id}/logs`); }
+
+  // Attendance Slips
+  async getSlipEmployees(month, year) { return this.request(`/api/slips/employees?month=${month}&year=${year}`); }
+  async getEmployeeSlip(employeeId, month, year) { return this.request(`/api/slips/employee/${employeeId}?month=${month}&year=${year}`); }
+  async getFullReport(month, year) { return this.request(`/api/slips/report?month=${month}&year=${year}`); }
+
   async exportCSV(sd, ed) {
     const token = this.getToken();
     const r = await fetch(`${this.baseUrl}/api/reports/export?start_date=${sd}&end_date=${ed}&format=csv`, { headers: { Authorization: `Bearer ${token}` } });

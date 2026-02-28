@@ -31,6 +31,7 @@ export default function DashboardHeader({ title, subtitle, showUser = true }) {
     { id: 'overview', l: '📊 Overview', path: '/dashboard' },
     { id: 'employees', l: '👥 Karyawan', path: '/dashboard/employees' },
     { id: 'attendance', l: '📅 Absensi', path: '/dashboard' },
+    { id: 'qr', l: '📱 QR Code', path: '/dashboard/qr' },
     { id: 'shifts', l: '🕐 Shift', path: '/dashboard/shifts' },
     { id: 'broadcast', l: '📢 Broadcast', path: '/dashboard/broadcast' },
     { id: 'overtime', l: '🕐 Lembur', path: '/dashboard/overtime' },
