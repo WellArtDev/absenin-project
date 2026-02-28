@@ -40,7 +40,10 @@ app.use('/api/selfie', apiLimiter, require('./routes/selfie'));
 app.use('/api/settings', apiLimiter, require('./routes/settings'));
 app.use('/api/payment', apiLimiter, require('./routes/payment'));
 app.use('/api/superadmin', apiLimiter, require('./routes/superadmin'));
-app.use('/api/webhook', require('./routes/webhook'));
+
+// Webhooks - multiple providers
+app.use('/api/webhook', require('./routes/webhook'));           // Generic/Multi-provider
+app.use('/api/webhook/fonnte', require('./routes/webhookFonnte')); // Fonnte-specific
 
 app.use((req, res) => res.status(404).json({ success: false, message: `${req.method} ${req.path} not found` }));
 app.use((err, req, res, next) => {

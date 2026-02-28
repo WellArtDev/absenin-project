@@ -14,9 +14,12 @@ router.post('/', async (req, res) => {
   res.status(200).json({ status: 'ok' });
 
   try {
-    let phoneNumber = '', messageText = '', location = null, imageData = null, deviceNumber = null;
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📨 WEBHOOK RECEIVED');
+    console.log('📨 Body keys:', Object.keys(req.body));
+    console.log('📨 Full body:', JSON.stringify(req.body, null, 2));
 
-    console.log('📨 Webhook body keys:', Object.keys(req.body));
+    let phoneNumber = '', messageText = '', location = null, imageData = null, deviceNumber = null;
 
     // ====== FONNTE FORMAT ======
     if (req.body.sender || req.body.pengirim) {
@@ -77,12 +80,21 @@ router.post('/', async (req, res) => {
 
     const result = await AttendanceService.processCheckIn(phoneNumber, messageText || '', location, imageData, forcedCompanyId);
     console.log(`📱 [company:${forcedCompanyId || 'auto'}] ${phoneNumber} → "${messageText}" ${imageData ? '📸' : ''} ${location ? '📍' : ''} → ${result.success ? '✅' : '❌'}`);
+    console.log(`📱 Result:`, JSON.stringify({ success: result.success, hasReply: !!result.reply, companyId: result.companyId }, null, 2));
+    if (result.reply) {
+      console.log(`📱 Reply message: ${result.reply.substring(0, 200)}...`);
+    }
 
     // Send reply via the tenant's own WA config
     if (result.reply && result.companyId) {
+      console.log(`📱 SENDING REPLY to ${phoneNumber}...`);
       const waService = new WhatsAppService();
-      await waService.sendMessage(phoneNumber, result.reply, result.companyId);
+      const sendResult = await waService.sendMessage(phoneNumber, result.reply, result.companyId);
+      console.log(`📱 SEND RESULT:`, JSON.stringify(sendResult, null, 2));
+    } else {
+      console.log(`📱 NO REPLY SENT - reply: ${!!result.reply}, companyId: ${result.companyId}`);
     }
+    console.log('═══════════════════════════════════════════════════════════');
   } catch (error) {
     console.error('❌ Webhook error:', error);
   }
