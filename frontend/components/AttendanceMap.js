@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -54,15 +54,16 @@ function createColorIcon(color = '#3B82F6') {
 
 // Status colors
 const statusColors = {
-  HADIR: '#10B981',      // Green
-  TERLAMBAT: '#F59E0B',  // Yellow
-  IZIN: '#8B5CF6',       // Purple
-  SAKIT: '#F97316',      // Orange
-  ALPHA: '#EF4444',      // Red
+  HADIR: '#10B981',
+  TERLAMBAT: '#F59E0B',
+  IZIN: '#8B5CF6',
+  SAKIT: '#F97316',
+  ALPHA: '#EF4444',
 };
 
 export default function AttendanceMap({ attendanceData = [], selectedId, onMarkerClick }) {
   const [mounted, setMounted] = useState(false);
+  const mapRef = useRef(null);
 
   // Indonesia center coordinates
   const indonesiaCenter = [-2.5489, 118.0149];
@@ -78,12 +79,20 @@ export default function AttendanceMap({ attendanceData = [], selectedId, onMarke
     a.latitude && a.longitude && !isNaN(a.latitude) && !isNaN(a.longitude)
   );
 
-  // Handle marker click
-  const handleMarkerClick = (attendance) => {
+  // Handle marker click - using direct approach
+  const handleMarkerClick = (attendance, marker) => {
     setMapCenter([attendance.latitude, attendance.longitude]);
     setMapZoom(16);
     if (onMarkerClick) {
       onMarkerClick(attendance);
+    }
+  };
+
+  const resetView = () => {
+    setMapCenter(indonesiaCenter);
+    setMapZoom(5);
+    if (onMarkerClick) {
+      onMarkerClick(null);
     }
   };
 
@@ -106,10 +115,7 @@ export default function AttendanceMap({ attendanceData = [], selectedId, onMarke
             </p>
           </div>
           <button
-            onClick={() => {
-              setMapCenter(indonesiaCenter);
-              setMapZoom(5);
-            }}
+            onClick={resetView}
             className="text-sm text-brand-600 hover:text-brand-700 font-medium"
           >
             🔄 Reset View
@@ -123,6 +129,7 @@ export default function AttendanceMap({ attendanceData = [], selectedId, onMarke
           zoom={mapZoom}
           style={{ height: '100%', width: '100%' }}
           zoomControl={true}
+          ref={mapRef}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -142,8 +149,11 @@ export default function AttendanceMap({ attendanceData = [], selectedId, onMarke
                 position={[attendance.latitude, attendance.longitude]}
                 icon={icon}
                 eventHandlers={{
-                  click: () => handleMarkerClick(attendance),
-                })}
+                  click: (e) => {
+                    handleMarkerClick(attendance);
+                    e.target.openPopup();
+                  }
+                }}
               >
                 <Popup>
                   <div className="p-2 min-w-[200px]">
@@ -152,23 +162,27 @@ export default function AttendanceMap({ attendanceData = [], selectedId, onMarke
                     </div>
                     <div className="text-sm text-gray-600 mt-1">
                       {attendance.check_in && (
-                        <div>🕐 Masuk: {new Date(attendance.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div>
+                          🕐 Masuk: {new Date(attendance.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       )}
                       {attendance.check_out && (
-                        <div>🕕 Pulang: {new Date(attendance.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div>
+                          🕕 Pulang: {new Date(attendance.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                       )}
                       {attendance.location_name && (
                         <div className="text-xs text-gray-500 mt-1">📍 {attendance.location_name}</div>
                       )}
                     </div>
                     <div className="mt-2">
-                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                        attendance.status === 'HADIR' ? 'bg-green-100 text-green-700' :
-                        attendance.status === 'TERLAMBAT' ? 'bg-yellow-100 text-yellow-700' :
-                        attendance.status === 'IZIN' ? 'bg-purple-100 text-purple-700' :
-                        attendance.status === 'SAKIT' ? 'bg-orange-100 text-orange-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
+                      <span className={
+                        attendance.status === 'HADIR' ? 'inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700' :
+                        attendance.status === 'TERLAMBAT' ? 'inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700' :
+                        attendance.status === 'IZIN' ? 'inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700' :
+                        attendance.status === 'SAKIT' ? 'inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700' :
+                        'inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700'
+                      }>
                         {attendance.status}
                       </span>
                     </div>
