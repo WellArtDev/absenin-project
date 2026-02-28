@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const AttendanceService = require('../services/attendanceService');
-const WhatsAppService = require('../utils/whatsapp');
+const { sendWA } = require('../helpers/whatsapp');
 const { query } = require('../config/db');
 
 // ─────────────────────────────────────────────────────────────
@@ -135,8 +135,7 @@ router.post('/', async (req, res) => {
     // ─── Send Reply ───
     if (result.reply && result.companyId) {
       console.log(`📤 Sending reply to ${phoneNumber}...`);
-      const waService = new WhatsAppService();
-      const sendResult = await waService.sendMessage(phoneNumber, result.reply, result.companyId);
+      const sendResult = await sendWA(result.companyId, phoneNumber, result.reply);
       console.log(`📤 Send result:`, JSON.stringify(sendResult, null, 2));
     } else {
       console.log(`⚠️ No reply sent - reply: ${!!result.reply}, companyId: ${result.companyId}`);
