@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query } = require('../config/db');
 const { authenticate } = require('../middleware/auth');
+const { sendWA } = require('../helpers/whatsapp');
 router.use(authenticate);
 
 router.get('/', async (req, res) => {
@@ -44,9 +45,51 @@ router.get('/summary', async (req, res) => {
 
 router.put('/:id/approve', async (req, res) => {
   try {
-    const result = await query('UPDATE overtime SET status=\'approved\', approved_by=$1, approved_at=CURRENT_TIMESTAMP WHERE id=$2 AND company_id=$3 RETURNING *',
-      [req.user.userId, req.params.id, req.user.companyId]);
+    const result = await query(`
+      UPDATE overtime o
+      SET status='approved', approved_by=$1, approved_at=CURRENT_TIMESTAMP
+      FROM employees e
+      WHERE o.id=$2
+        AND o.company_id=$3
+        AND e.id = o.employee_id
+      RETURNING o.*, e.name as employee_name, e.phone_number, e.employee_code
+    `, [req.user.userId, req.params.id, req.user.companyId]);
+
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Not found.' });
+
+    // Non-blocking WA notification to employee when overtime is approved.
+    const approved = result.rows[0];
+    if (approved.phone_number) {
+      const dateText = approved.date
+        ? new Date(approved.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })
+        : '-';
+      const durationText = approved.duration_minutes
+        ? `${Math.floor(Number(approved.duration_minutes) / 60)}j ${Number(approved.duration_minutes) % 60}m`
+        : 'sesuai pengajuan';
+
+      const message = [
+        '✅ *LEMBUR DISETUJUI*',
+        '',
+        `Halo ${approved.employee_name || 'Karyawan'},`,
+        'Pengajuan lembur kamu sudah disetujui admin.',
+        '',
+        `📅 Tanggal: ${dateText}`,
+        `⏱️ Durasi: ${durationText}`,
+        '',
+        '_Absenin_'
+      ].join('\n');
+
+      sendWA(req.user.companyId, approved.phone_number, message)
+        .then((waResult) => {
+          if (!waResult?.success) {
+            console.warn('⚠️ Overtime approval WA failed:', waResult?.reason || waResult);
+          }
+        })
+        .catch((waErr) => {
+          console.warn('⚠️ Overtime approval WA error:', waErr.message);
+        });
+    }
+
     res.json({ success: true, data: result.rows[0] });
   } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
 });

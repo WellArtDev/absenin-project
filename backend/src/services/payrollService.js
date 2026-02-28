@@ -5,6 +5,14 @@ class PayrollService {
     // Make payroll module forward-compatible on older DBs.
     await query(`
       ALTER TABLE IF EXISTS payroll_settings
+      ADD COLUMN IF NOT EXISTS include_weekends BOOLEAN DEFAULT false
+    `);
+    await query(`
+      ALTER TABLE IF EXISTS payroll_settings
+      ADD COLUMN IF NOT EXISTS cutoff_day INTEGER DEFAULT 25
+    `);
+    await query(`
+      ALTER TABLE IF EXISTS payroll_settings
       ADD COLUMN IF NOT EXISTS bpjs_health_employee_percent DECIMAL(5,2) DEFAULT 0
     `);
     await query(`

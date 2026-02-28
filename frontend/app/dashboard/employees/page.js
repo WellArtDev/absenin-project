@@ -15,6 +15,15 @@ const DetailRow = ({ label, value, capitalize = false, highlight = false }) => {
   );
 };
 
+const normalizeEmployee = (emp = {}) => ({
+  ...emp,
+  employee_id: emp.employee_id ?? emp.employee_code ?? '',
+  phone: emp.phone ?? emp.phone_number ?? '',
+  join_date: emp.join_date ?? emp.start_date ?? null,
+  date_of_birth: emp.date_of_birth ?? emp.birth_date ?? null,
+  npwp: emp.npwp ?? emp.npwp_number ?? ''
+});
+
 export default function EmployeesPage() {
   const router = useRouter();
   const [employees, setEmployees] = useState([]);
@@ -36,7 +45,7 @@ export default function EmployeesPage() {
         api.getDivisions ? api.getDivisions() : api.get('/divisions').catch(() => ({ data: [] })),
         api.getPositions ? api.getPositions() : api.get('/positions').catch(() => ({ data: [] })),
       ]);
-      setEmployees(empR.data || []);
+      setEmployees((empR.data || []).map(normalizeEmployee));
       setDivisions(divR.data || []);
       setPositions(posR.data || []);
     } catch (e) { setMsg('❌ ' + e.message); }
@@ -50,19 +59,25 @@ export default function EmployeesPage() {
     setSaving(true); setMsg('');
     try {
       const fd = new FormData(e.target);
+      const rawPhone = (fd.get('emp_work_phone') || '').toString().trim();
       const data = {
         name: fd.get('emp_name'),
+        employee_code: fd.get('emp_eid') || null,
         employee_id: fd.get('emp_eid'),
         email: fd.get('emp_email'),
-        phone: fd.get('emp_work_phone'),
+        phone_number: rawPhone,
+        phone: rawPhone,
         division_id: fd.get('emp_division') || null,
         position_id: fd.get('emp_position') || null,
+        start_date: fd.get('emp_join_date') || null,
         join_date: fd.get('emp_join_date') || null,
         employment_status: fd.get('emp_status') || 'tetap',
         base_salary: fd.get('emp_salary') ? parseInt(fd.get('emp_salary')) : null,
         ktp_number: fd.get('emp_ktp'),
+        birth_date: fd.get('emp_dob') || null,
         date_of_birth: fd.get('emp_dob') || null,
         personal_email: fd.get('emp_personal_email'),
+        npwp_number: fd.get('emp_npwp'),
         npwp: fd.get('emp_npwp'),
       };
 
@@ -142,7 +157,8 @@ export default function EmployeesPage() {
         if (!name) continue;
 
         try {
-          await api.createEmployee({ name, phone: phone.replace(/[^0-9]/g, '') });
+          const cleanPhone = phone.replace(/[^0-9]/g, '');
+          await api.createEmployee({ name, phone_number: cleanPhone, phone: cleanPhone });
           successCount++;
         } catch (err) {
           console.error(`Gagal import baris ${i}:`, err);

@@ -5,7 +5,7 @@ import api from '@/lib/api';
 
 export default function PayrollPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
   const [activeTab, setActiveTab] = useState('calculate'); // 'calculate', 'history', 'settings'
 
@@ -23,9 +23,26 @@ export default function PayrollPage() {
   const years = Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i);
 
   useEffect(() => {
-    loadSettings();
-    loadPeriods();
+    const init = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([loadSettings(), loadPeriods()]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
+
+  const toNumberOrZero = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const toIntOrDefault = (value, fallback = 25) => {
+    const num = Number.parseInt(value, 10);
+    return Number.isFinite(num) ? num : fallback;
+  };
 
   const loadSettings = async () => {
     try {
@@ -53,13 +70,13 @@ export default function PayrollPage() {
     try {
       const formData = new FormData(e.target);
       const data = {
-        overtime_rate_per_hour: parseFloat(formData.get('overtime_rate')),
-        late_deduction_per_minute: parseFloat(formData.get('late_rate')),
-        absent_deduction_per_day: parseFloat(formData.get('absent_rate')),
-        cutoff_day: parseInt(formData.get('cutoff_day')),
-        bpjs_health_employee_percent: parseFloat(formData.get('bpjs_health_rate')),
-        bpjs_employment_employee_percent: parseFloat(formData.get('bpjs_employment_rate')),
-        pph21_percent: parseFloat(formData.get('pph21_rate'))
+        overtime_rate_per_hour: toNumberOrZero(formData.get('overtime_rate')),
+        late_deduction_per_minute: toNumberOrZero(formData.get('late_rate')),
+        absent_deduction_per_day: toNumberOrZero(formData.get('absent_rate')),
+        cutoff_day: toIntOrDefault(formData.get('cutoff_day'), 25),
+        bpjs_health_employee_percent: toNumberOrZero(formData.get('bpjs_health_rate')),
+        bpjs_employment_employee_percent: toNumberOrZero(formData.get('bpjs_employment_rate')),
+        pph21_percent: toNumberOrZero(formData.get('pph21_rate'))
       };
 
       await api.updatePayrollSettings(data);
