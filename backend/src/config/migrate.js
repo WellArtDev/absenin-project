@@ -95,6 +95,40 @@ const MIGRATIONS = [
     },
   },
 
+  // ── v3.1.3 ── Blog posts public CMS
+  {
+    version: 'v3.1.3_create_blog_posts_table',
+    description: 'Buat tabel blog_posts + index untuk halaman blog publik',
+    up: async (client) => {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS blog_posts (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          excerpt TEXT,
+          content_html TEXT NOT NULL,
+          feature_image_url TEXT,
+          status VARCHAR(20) NOT NULL DEFAULT 'draft',
+          published_at TIMESTAMP NULL,
+          created_by INTEGER REFERENCES users(id),
+          updated_by INTEGER REFERENCES users(id),
+          created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_status_published_at
+        ON blog_posts(status, published_at DESC)
+      `);
+
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_blog_posts_slug_public
+        ON blog_posts(slug)
+      `);
+    },
+  },
+
   // ════════════════════════════════════════════════════════════════════
   // ↓ TAMBAHKAN MIGRATION BARU DI SINI
   //
