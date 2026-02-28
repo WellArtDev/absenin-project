@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import api from '@/lib/api';
 
@@ -156,10 +157,14 @@ export default function DashboardPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Spinner /></div>;
 
   const tabs = [
-    { id: 'overview', l: '📊 Overview' }, { id: 'employees', l: '👥 Karyawan' },
-    { id: 'attendance', l: '📅 Absensi' }, { id: 'overtime', l: '🕐 Lembur' },
-    { id: 'leaves', l: '🏖️ Cuti' }, { id: 'reports', l: '📤 Laporan' },
-    { id: 'settings', l: '⚙️ Pengaturan' }, { id: 'payment', l: '💰 Paket' },
+    { id: 'overview', l: '📊 Overview', internal: true },
+    { id: 'employees', l: '👥 Karyawan', path: '/dashboard/employees' },
+    { id: 'attendance', l: '📅 Absensi', internal: true },
+    { id: 'overtime', l: '🕐 Lembur', path: '/dashboard/overtime' },
+    { id: 'leaves', l: '🏖️ Cuti', path: '/dashboard/leaves' },
+    { id: 'reports', l: '📤 Laporan', path: '/dashboard/reports' },
+    { id: 'settings', l: '⚙️ Pengaturan', path: '/dashboard/settings' },
+    { id: 'payment', l: '💰 Paket', path: '/dashboard/payment' },
   ];
   const gr = new Date().getHours() < 12 ? 'Pagi' : new Date().getHours() < 17 ? 'Siang' : 'Malam';
   const todayStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -176,7 +181,28 @@ export default function DashboardPage() {
               <span className="text-[10px] sm:text-xs text-brand-500 font-medium bg-brand-50 px-1.5 sm:px-2 py-0.5 rounded-full">{user?.plan || 'free'}</span>
             </div>
             <div className="hidden lg:flex items-center gap-1">
-              {tabs.map(t => <button key={t.id} onClick={() => { setTab(t.id); setSubTab('list'); setSelectedAttendanceId(null); }} className={`px-2 sm:px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-brand-50 text-brand-600' : 'text-gray-600 hover:bg-gray-100'}`}>{t.l}</button>)}
+              {tabs.map(t => {
+                if (t.internal) {
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => { setTab(t.id); setSubTab('list'); setSelectedAttendanceId(null); }}
+                      className={`px-2 sm:px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-brand-50 text-brand-600' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                      {t.l}
+                    </button>
+                  );
+                }
+                return (
+                  <Link
+                    key={t.id}
+                    href={t.path}
+                    className="px-2 sm:px-3 py-2 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100"
+                  >
+                    {t.l}
+                  </Link>
+                );
+              })}
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="hidden sm:block text-right"><p className="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-none">{user?.name}</p><p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.company_name}</p></div>
@@ -188,9 +214,28 @@ export default function DashboardPage() {
       {/* Mobile tabs */}
       <div className="lg:hidden overflow-x-auto border-b bg-white px-2 scrollbar-hide">
         <div className="flex gap-1 min-w-max">
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => { setTab(t.id); setSubTab('list'); setSelectedAttendanceId(null); }} className={`px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${tab === t.id ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500'}`}>{t.l}</button>
-          ))}
+          {tabs.map(t => {
+            if (t.internal) {
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => { setTab(t.id); setSubTab('list'); setSelectedAttendanceId(null); }}
+                  className={`px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${tab === t.id ? 'border-brand-500 text-brand-600' : 'border-transparent text-gray-500'}`}
+                >
+                  {t.l}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={t.id}
+                href={t.path}
+                className="px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors border-transparent text-gray-500"
+              >
+                {t.l}
+              </Link>
+            );
+          })}
         </div>
       </div>
 
@@ -406,14 +451,6 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-
-        {/* Placeholder for other tabs */}
-        {(tab === 'employees' || tab === 'overtime' || tab === 'leaves' || tab === 'reports' || tab === 'settings' || tab === 'payment') && (
-          <div className="py-12 text-center text-gray-500">
-            <p className="text-lg font-medium mb-2">🚀 Fitur {tabs.find(t => t.id === tab)?.l}</p>
-            <p className="text-sm">Silakan pilih tab lain untuk melihat data.</p>
-          </div>
-        )}
       </div>
 
       {/* Floating Action Button for Mobile */}
@@ -429,18 +466,32 @@ export default function DashboardPage() {
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
         <div className="flex justify-around py-2">
-          {tabs.slice(0, 5).map(t => (
-            <button
-              key={t.id}
-              onClick={() => { setTab(t.id); setSelectedAttendanceId(null); }}
-              className={`flex flex-col items-center py-2 px-3 text-[10px] font-medium ${
-                tab === t.id ? 'text-brand-600' : 'text-gray-500'
-              }`}
-            >
-              <span className="text-base">{t.l.split(' ')[0]}</span>
-              <span className="text-[8px]">{t.l.split(' ')[1]}</span>
-            </button>
-          ))}
+          {tabs.filter(t => t.internal || t.id === 'employees' || t.id === 'leaves').slice(0, 5).map(t => {
+            if (t.internal) {
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => { setTab(t.id); setSelectedAttendanceId(null); }}
+                  className={`flex flex-col items-center py-2 px-3 text-[10px] font-medium ${
+                    tab === t.id ? 'text-brand-600' : 'text-gray-500'
+                  }`}
+                >
+                  <span className="text-base">{t.l.split(' ')[0]}</span>
+                  <span className="text-[8px]">{t.l.split(' ')[1]}</span>
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={t.id}
+                href={t.path}
+                className="flex flex-col items-center py-2 px-3 text-[10px] font-medium text-gray-500"
+              >
+                <span className="text-base">{t.l.split(' ')[0]}</span>
+                <span className="text-[8px]">{t.l.split(' ')[1]}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

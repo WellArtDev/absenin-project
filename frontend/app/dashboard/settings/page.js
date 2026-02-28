@@ -10,6 +10,8 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
   const [msg, setMsg] = useState('');
   const [settings, setSettings] = useState(null);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -65,6 +67,39 @@ export default function SettingsPage() {
     } catch (err) {
       setMsg('❌ ' + (err.message || 'Gagal kirim test'));
     } finally { setTesting(false); }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPasswordSaving(true);
+    setMsg('');
+    try {
+      const fd = new FormData(e.target);
+      const currentPassword = fd.get('current_password');
+      const newPassword = fd.get('new_password');
+      const confirmPassword = fd.get('confirm_password');
+
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        throw new Error('Semua field password wajib diisi');
+      }
+
+      if (newPassword.length < 6) {
+        throw new Error('Password baru minimal 6 karakter');
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new Error('Password baru dan konfirmasi tidak cocok');
+      }
+
+      await api.changePassword(currentPassword, newPassword);
+      setMsg('✅ Password berhasil diubah!');
+      setShowPasswordForm(false);
+      e.target.reset();
+    } catch (err) {
+      setMsg('❌ ' + (err.message || 'Gagal mengubah password'));
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   if (loading) {
@@ -264,6 +299,80 @@ export default function SettingsPage() {
               {testing ? '⏳ Mengirim...' : '📤 Test Kirim WA'}
             </button>
           </div>
+        </div>
+
+        {/* ===== PASSWORD ===== */}
+        <div className="bg-white rounded-2xl border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">🔑 Ganti Password</h2>
+            {!showPasswordForm && (
+              <button
+                type="button"
+                onClick={() => setShowPasswordForm(true)}
+                className="text-sm text-red-500 hover:text-red-600 font-medium"
+              >
+                Ubah Password
+              </button>
+            )}
+          </div>
+
+          {!showPasswordForm ? (
+            <p className="text-sm text-gray-500">Klik tombol "Ubah Password" untuk mengubah password akun Anda.</p>
+          ) : (
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div>
+                <label htmlFor="current_password" className="block text-sm font-medium mb-2">Password Saat Ini *</label>
+                <input
+                  id="current_password"
+                  name="current_password"
+                  type="password"
+                  required
+                  className={inputCls}
+                  placeholder="Masukkan password saat ini"
+                />
+              </div>
+              <div>
+                <label htmlFor="new_password" className="block text-sm font-medium mb-2">Password Baru *</label>
+                <input
+                  id="new_password"
+                  name="new_password"
+                  type="password"
+                  required
+                  minLength={6}
+                  className={inputCls}
+                  placeholder="Minimal 6 karakter"
+                />
+              </div>
+              <div>
+                <label htmlFor="confirm_password" className="block text-sm font-medium mb-2">Konfirmasi Password Baru *</label>
+                <input
+                  id="confirm_password"
+                  name="confirm_password"
+                  type="password"
+                  required
+                  minLength={6}
+                  className={inputCls}
+                  placeholder="Ulangi password baru"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={passwordSaving}
+                  className="bg-red-500 text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-red-600 disabled:opacity-50"
+                >
+                  {passwordSaving ? '⏳ Menyimpan...' : '💾 Simpan Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowPasswordForm(false); setMsg(''); }}
+                  className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl text-sm font-semibold hover:bg-gray-200"
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         {/* ===== SAVE BUTTON ===== */}

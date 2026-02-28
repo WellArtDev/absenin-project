@@ -28,6 +28,7 @@ class ApiClient {
   async register(data) { const r = await this.request('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }); if (r.success) { this.setToken(r.data.token); this.setUser(r.data.user); } return r; }
   async login(email, pw) { const r = await this.request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password: pw }) }); if (r.success) { this.setToken(r.data.token); this.setUser(r.data.user); } return r; }
   async getMe() { return this.request('/api/auth/me'); }
+  async changePassword(currentPassword, newPassword) { return this.request('/api/auth/change-password', { method: 'PUT', body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }) }); }
   logout() { this.removeToken(); if (typeof window !== 'undefined') window.location.href = '/login'; }
 
   // Employees

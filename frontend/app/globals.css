@@ -210,3 +210,22 @@ body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: anti
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ======== WHATSAPP THEME ======== */
+:root {
+  --wa-primary: #25D366;
+  --wa-dark: #075E54;
+  --wa-teal: #128C7E;
+  --wa-light: #DCF8C6;
+  --wa-accent: #34B7F1;
+  --wa-chat-bg: #ECE5DD;
+}
+
+.bg-wa-primary { background-color: var(--wa-primary); }
+.bg-wa-dark { background-color: var(--wa-dark); }
+.bg-wa-teal { background-color: var(--wa-teal); }
+.bg-wa-light { background-color: var(--wa-light); }
+.text-wa-primary { color: var(--wa-primary); }
+.text-wa-dark { color: var(--wa-dark); }
+.text-wa-teal { color: var(--wa-teal); }
+.border-wa-primary { border-color: var(--wa-primary); }

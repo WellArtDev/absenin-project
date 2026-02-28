@@ -77,4 +77,45 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
+// Change Password
+router.put('/change-password', authenticate, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+
+    // Validate input
+    if (!current_password || !new_password) {
+      return res.status(400).json({ success: false, message: 'Password saat ini dan password baru wajib diisi.' });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password baru minimal 6 karakter.' });
+    }
+
+    // Get user with current password
+    const result = await query('SELECT id, password FROM users WHERE id=$1', [req.user.userId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
+    }
+
+    const user = result.rows[0];
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(current_password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Password saat ini salah.' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(new_password, 12);
+
+    // Update password
+    await query('UPDATE users SET password=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2', [hashedPassword, req.user.userId]);
+
+    res.json({ success: true, message: 'Password berhasil diubah!' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ success: false, message: 'Server error.' });
+  }
+});
+
 module.exports = router;

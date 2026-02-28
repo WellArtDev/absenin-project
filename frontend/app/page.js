@@ -1,11 +1,33 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export default function LandingPage() {
   const [vis, setVis] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => setVis(true), []);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/payment/plans`);
+        const data = await res.json();
+        if (data.success) {
+          setPlans(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch plans:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -325,34 +347,50 @@ export default function LandingPage() {
             <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#0f172a',marginBottom:16,letterSpacing:'-1px'}}>Harga Transparan</h2>
             <p style={{fontSize:18,color:'#64748b'}}>Mulai gratis. Upgrade kapan saja. Tanpa biaya tersembunyi.</p>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:24,alignItems:'start'}}>
-            {[
-              {name:'Gratis',price:'0',period:'selamanya',emp:'10',highlight:false,badge:null,features:['10 karyawan','Selfie & GPS','Dashboard admin','Export CSV','Webhook WhatsApp']},
-              {name:'Pro',price:'99.000',period:'/bulan',emp:'50',highlight:true,badge:'PALING POPULER',features:['50 karyawan','Semua fitur Gratis','Manajemen Lembur','Manajemen Cuti','Auto Reminder WA','Radius Lock','Priority Support']},
-              {name:'Enterprise',price:'299.000',period:'/bulan',emp:'Unlimited',highlight:false,badge:null,features:['Karyawan tak terbatas','Semua fitur Pro','Multi-cabang','API Access','Custom Branding','Dedicated Support']},
-            ].map((p,i)=>(
-              <div key={i} style={{borderRadius:24,overflow:'hidden',border:p.highlight?'none':'1.5px solid #f1f5f9',boxShadow:p.highlight?'0 0 0 2.5px #0ea5e9,0 20px 60px rgba(14,165,233,.2)':'0 2px 12px rgba(0,0,0,.04)',transform:p.highlight?'scale(1.03)':'none'}}>
-                {p.badge&&<div style={{background:'linear-gradient(135deg,#0ea5e9,#6366f1)',color:'#fff',textAlign:'center',padding:'12px',fontSize:12,fontWeight:900,letterSpacing:'0.5px'}}>{p.badge}</div>}
-                <div style={{background:'#fff',padding:'32px'}}>
-                  <h3 style={{fontSize:22,fontWeight:900,color:'#0f172a',marginBottom:8}}>{p.name}</h3>
-                  <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
-                    <span style={{fontSize:13,color:'#94a3b8'}}>Rp</span>
-                    <span style={{fontSize:38,fontWeight:900,color:'#0f172a',lineHeight:1}}>{p.price}</span>
-                    <span style={{fontSize:13,color:'#94a3b8'}}>{p.period}</span>
+          {loading ? (
+            <div style={{textAlign:'center',padding:'40px'}}>Memuat paket...</div>
+          ) : plans.length === 0 ? (
+            <div style={{textAlign:'center',padding:'40px'}}>Tidak ada paket tersedia saat ini.</div>
+          ) : (
+            <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(plans.length, 3)},1fr)`,gap:24,alignItems:'start'}}>
+              {plans.sort((a,b) => (a.sort_order || 0) - (b.sort_order || 0)).map((p,i) => {
+                const features = Array.isArray(p.features) ? p.features : [];
+                const highlight = p.slug === 'pro' || p.sort_order === 2;
+                const badge = highlight ? 'PALING POPULER' : null;
+                return (
+                  <div key={p.id} style={{borderRadius:24,overflow:'hidden',border:highlight?'none':'1.5px solid #f1f5f9',boxShadow:highlight?'0 0 0 2.5px #0ea5e9,0 20px 60px rgba(14,165,233,.2)':'0 2px 12px rgba(0,0,0,.04)',transform:highlight?'scale(1.03)':'none'}}>
+                    {badge&&<div style={{background:'linear-gradient(135deg,#0ea5e9,#6366f1)',color:'#fff',textAlign:'center',padding:'12px',fontSize:12,fontWeight:900,letterSpacing:'0.5px'}}>{badge}</div>}
+                    <div style={{background:'#fff',padding:'32px'}}>
+                      <h3 style={{fontSize:22,fontWeight:900,color:'#0f172a',marginBottom:8}}>{p.name}</h3>
+                      <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
+                        <span style={{fontSize:13,color:'#94a3b8'}}>Rp</span>
+                        <span style={{fontSize:38,fontWeight:900,color:'#0f172a',lineHeight:1}}>{Number(p.price).toLocaleString('id-ID')}</span>
+                        <span style={{fontSize:13,color:'#94a3b8'}}>{p.duration_days === 0 ? 'selamanya' : `/ ${p.duration_days} hari`}</span>
+                      </div>
+                      <p style={{fontSize:13,color:'#0ea5e9',fontWeight:700,marginBottom:24}}>👥 {p.max_employees >= 999 ? 'Unlimited' : `${p.max_employees}`} karyawan</p>
+                      <ul style={{listStyle:'none',padding:0,margin:'0 0 28px',display:'flex',flexDirection:'column',gap:10}}>
+                        {features.map((f,j) => (
+                          <li key={j} style={{display:'flex',alignItems:'center',gap:10,fontSize:13,color:'#374151'}}>
+                            <span style={{width:20,height:20,borderRadius:'50%',background:'#e0f2fe',color:'#0369a1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>
+                            <span style={{textTransform:'capitalize'}}>{typeof f === 'string' ? f.replace(/_/g, ' ') : f}</span>
+                          </li>
+                        ))}
+                        {features.length === 0 && (
+                          <li style={{display:'flex',alignItems:'center',gap:10,fontSize:13,color:'#94a3b8'}}>
+                            <span style={{width:20,height:20,borderRadius:'50%',background:'#f1f5f9',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>
+                            Hubungi admin untuk detail fitur
+                          </li>
+                        )}
+                      </ul>
+                      <Link href="/register" className={highlight?'btn-primary':'btn-ghost'} style={{width:'100%',justifyContent:'center',fontSize:14,display:'flex'}}>
+                        {p.price === 0 ? 'Mulai Gratis' : 'Langganan Sekarang'}
+                      </Link>
+                    </div>
                   </div>
-                  <p style={{fontSize:13,color:'#0ea5e9',fontWeight:700,marginBottom:24}}>👥 {p.emp} karyawan</p>
-                  <ul style={{listStyle:'none',padding:0,margin:'0 0 28px',display:'flex',flexDirection:'column',gap:10}}>
-                    {p.features.map((f,j)=>(
-                      <li key={j} style={{display:'flex',alignItems:'center',gap:10,fontSize:13,color:'#374151'}}>
-                        <span style={{width:20,height:20,borderRadius:'50%',background:'#e0f2fe',color:'#0369a1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>{f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register" className={p.highlight?'btn-primary':'btn-ghost'} style={{width:'100%',justifyContent:'center',fontSize:14,display:'flex'}}>
-                    {p.price==='0'?'Mulai Gratis':'Coba 14 Hari Gratis'}
-                  </Link>
-                </div>
-              </div>
+                );
+              })}
+            </div>
+          )}
             ))}
           </div>
           <p style={{textAlign:'center',color:'#94a3b8',fontSize:13,marginTop:32}}>Semua paket termasuk dukungan teknis. Pembayaran via transfer bank, dikonfirmasi manual. Cancel kapan saja.</p>

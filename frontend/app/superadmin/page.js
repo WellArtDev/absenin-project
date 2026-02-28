@@ -20,7 +20,8 @@ export default function SuperadminPage() {
   const [banks, setBanks] = useState([]);
   const [payments, setPayments] = useState([]);
   const [showPlanForm, setShowPlanForm] = useState(false);
-  const [planForm, setPlanForm] = useState({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0 });
+  const [editingPlan, setEditingPlan] = useState(null);
+  const [planForm, setPlanForm] = useState({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0, features: [] });
   const [showBankForm, setShowBankForm] = useState(false);
   const [bankForm, setBankForm] = useState({ bank_name: '', account_number: '', account_name: '', sort_order: 0 });
 
@@ -52,11 +53,71 @@ export default function SuperadminPage() {
   }, [tab]);
 
   const toggleCompany = async (id, active) => { try { await api.updateSACompany(id, { is_active: !active }); loadCompanies(); } catch (e) { alert(e.message); } };
+
+  const openPlanForm = (plan = null) => {
+    if (plan) {
+      setEditingPlan(plan);
+      setPlanForm({
+        name: plan.name,
+        slug: plan.slug,
+        price: plan.price,
+        max_employees: plan.max_employees,
+        duration_days: plan.duration_days,
+        description: plan.description || '',
+        sort_order: plan.sort_order || 0,
+        features: Array.isArray(plan.features) ? plan.features : []
+      });
+    } else {
+      setEditingPlan(null);
+      setPlanForm({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0, features: [] });
+    }
+    setShowPlanForm(true);
+  };
+
+  const closePlanForm = () => {
+    setShowPlanForm(false);
+    setEditingPlan(null);
+    setPlanForm({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0, features: [] });
+  };
+
+  const savePlan = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingPlan) {
+        await api.updateSAPlan(editingPlan.id, planForm);
+        alert('✅ Paket berhasil diupdate!');
+      } else {
+        await api.createSAPlan(planForm);
+        alert('✅ Paket berhasil ditambahkan!');
+      }
+      closePlanForm();
+      loadPlans();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const addPlan = async (e) => {
     e.preventDefault();
-    try { await api.createSAPlan(planForm); setPlanForm({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0 }); setShowPlanForm(false); loadPlans(); } catch (err) { alert(err.message); }
+    try { await api.createSAPlan(planForm); setPlanForm({ name: '', slug: '', price: 0, max_employees: 10, duration_days: 30, description: '', sort_order: 0, features: [] }); setShowPlanForm(false); loadPlans(); } catch (err) { alert(err.message); }
   };
+
   const delPlan = async (id) => { if (!confirm('Hapus plan?')) return; try { await api.deleteSAPlan(id); loadPlans(); } catch (e) { alert(e.message); } };
+
+  const updatePlanFeature = (index, value) => {
+    const newFeatures = [...planForm.features];
+    newFeatures[index] = value;
+    setPlanForm({ ...planForm, features: newFeatures });
+  };
+
+  const addPlanFeature = () => {
+    setPlanForm({ ...planForm, features: [...planForm.features, ''] });
+  };
+
+  const removePlanFeature = (index) => {
+    const newFeatures = planForm.features.filter((_, i) => i !== index);
+    setPlanForm({ ...planForm, features: newFeatures });
+  };
   const addBank = async (e) => {
     e.preventDefault();
     try { await api.createSABank(bankForm); setBankForm({ bank_name: '', account_number: '', account_name: '', sort_order: 0 }); setShowBankForm(false); loadBanks(); } catch (err) { alert(err.message); }
@@ -71,13 +132,13 @@ export default function SuperadminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-red-600 text-white text-center text-xs py-1 font-medium">🔑 SUPERADMIN MODE</div>
+      <div className="bg-wa-dark text-white text-center text-xs py-1 font-medium">🔑 SUPERADMIN MODE</div>
       <div className="bg-white border-b sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
-            <div className="flex items-center gap-3"><div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">SA</span></div><span className="text-lg font-bold">Absenin Admin</span></div>
-            <div className="flex items-center gap-1">{tabs.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-red-50 text-red-600' : 'text-gray-600 hover:bg-gray-100'}`}>{t.l}</button>)}</div>
-            <button onClick={() => api.logout()} className="text-sm text-red-500 font-medium px-3 py-1.5 rounded-lg hover:bg-red-50">Keluar</button>
+            <div className="flex items-center gap-3"><div className="w-8 h-8 bg-wa-primary rounded-lg flex items-center justify-center"><span className="text-white font-bold text-sm">SA</span></div><span className="text-lg font-bold">Absenin Admin</span></div>
+            <div className="flex items-center gap-1">{tabs.map(t => <button key={t.id} onClick={() => setTab(t.id)} className={`px-3 py-2 rounded-lg text-xs font-medium ${tab === t.id ? 'bg-wa-light text-wa-dark' : 'text-gray-600 hover:bg-gray-100'}`}>{t.l}</button>)}</div>
+            <button onClick={() => api.logout()} className="text-sm text-wa-primary font-medium px-3 py-1.5 rounded-lg hover:bg-wa-light">Keluar</button>
           </div>
         </div>
       </div>
@@ -155,10 +216,14 @@ export default function SuperadminPage() {
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">📦 Kelola Paket</h2>
-              <button onClick={() => setShowPlanForm(!showPlanForm)} className="bg-red-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-red-600">{showPlanForm ? '✕ Tutup' : '+ Tambah Paket'}</button>
+              <button onClick={() => openPlanForm()} className="bg-wa-primary text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-wa-dark">+ Tambah Paket</button>
             </div>
             {showPlanForm && (
-              <form onSubmit={addPlan} className="bg-white rounded-2xl border p-6 space-y-4">
+              <form onSubmit={savePlan} className="bg-white rounded-2xl border p-6 space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">{editingPlan ? '✏️ Edit Paket' : '➕ Tambah Paket Baru'}</h3>
+                  <button type="button" onClick={closePlanForm} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
                 <div className="grid md:grid-cols-3 gap-4">
                   <div><label className="block text-sm font-medium mb-1">Nama *</label><input required value={planForm.name} onChange={e => setPlanForm({ ...planForm, name: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
                   <div><label className="block text-sm font-medium mb-1">Slug *</label><input required value={planForm.slug} onChange={e => setPlanForm({ ...planForm, slug: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="pro, enterprise" /></div>
@@ -168,7 +233,29 @@ export default function SuperadminPage() {
                   <div><label className="block text-sm font-medium mb-1">Urutan</label><input type="number" value={planForm.sort_order} onChange={e => setPlanForm({ ...planForm, sort_order: parseInt(e.target.value) })} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
                 </div>
                 <div><label className="block text-sm font-medium mb-1">Deskripsi</label><input value={planForm.description} onChange={e => setPlanForm({ ...planForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
-                <button type="submit" className="bg-red-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600">💾 Simpan Paket</button>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Fitur</label>
+                  <div className="space-y-2">
+                    {planForm.features.map((feat, i) => (
+                      <div key={i} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={feat}
+                          onChange={e => updatePlanFeature(i, e.target.value)}
+                          className="flex-1 px-3 py-2.5 rounded-xl border text-sm"
+                          placeholder="Contoh: attendance, selfie, gps"
+                        />
+                        <button type="button" onClick={() => removePlanFeature(i)} className="text-red-500 hover:bg-red-50 px-3 rounded-lg text-sm">Hapus</button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={addPlanFeature} className="text-sm text-brand-600 hover:text-brand-700 font-medium">+ Tambah Fitur</button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Format fitur: attendance, selfie, gps, dashboard, export_csv, dll</p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button type="submit" className="bg-wa-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-wa-dark">{editingPlan ? '💾 Update Paket' : '💾 Simpan Paket'}</button>
+                  <button type="button" onClick={closePlanForm} className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-semibold">Batal</button>
+                </div>
               </form>
             )}
             <div className="bg-white rounded-2xl border overflow-hidden">
@@ -186,7 +273,10 @@ export default function SuperadminPage() {
                   <td className="px-4 py-4 text-center text-sm">{p.max_employees}</td>
                   <td className="px-4 py-4 text-center text-sm">{p.duration_days} hari</td>
                   <td className="px-4 py-4 text-center"><span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{p.is_active ? 'Aktif' : 'Nonaktif'}</span></td>
-                  <td className="px-6 py-4 text-right"><button onClick={() => delPlan(p.id)} className="text-red-500 text-xs hover:bg-red-50 px-3 py-1 rounded-lg">Hapus</button></td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => openPlanForm(p)} className="text-wa-primary text-xs hover:bg-wa-light px-3 py-1 rounded-lg mr-2">✏️ Edit</button>
+                    <button onClick={() => delPlan(p.id)} className="text-red-500 text-xs hover:bg-red-50 px-3 py-1 rounded-lg">Hapus</button>
+                  </td>
                 </tr>
               ))}</tbody></table>
             </div>
@@ -198,14 +288,14 @@ export default function SuperadminPage() {
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">🏦 Kelola Rekening Bank</h2>
-              <button onClick={() => setShowBankForm(!showBankForm)} className="bg-red-500 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-red-600">{showBankForm ? '✕ Tutup' : '+ Tambah Bank'}</button>
+              <button onClick={() => setShowBankForm(!showBankForm)} className="bg-wa-primary text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-wa-dark">{showBankForm ? '✕ Tutup' : '+ Tambah Bank'}</button>
             </div>
             {showBankForm && (
               <form onSubmit={addBank} className="bg-white rounded-2xl border p-6 grid md:grid-cols-4 gap-4">
                 <div><label className="block text-sm font-medium mb-1">Nama Bank *</label><input required value={bankForm.bank_name} onChange={e => setBankForm({ ...bankForm, bank_name: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" placeholder="BCA" /></div>
                 <div><label className="block text-sm font-medium mb-1">No. Rekening *</label><input required value={bankForm.account_number} onChange={e => setBankForm({ ...bankForm, account_number: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
                 <div><label className="block text-sm font-medium mb-1">Atas Nama *</label><input required value={bankForm.account_name} onChange={e => setBankForm({ ...bankForm, account_name: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
-                <div className="flex items-end"><button type="submit" className="bg-red-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-600 w-full">💾 Simpan</button></div>
+                <div className="flex items-end"><button type="submit" className="bg-wa-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-wa-dark w-full">💾 Simpan</button></div>
               </form>
             )}
             <div className="bg-white rounded-2xl border overflow-hidden">
