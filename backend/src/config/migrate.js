@@ -249,14 +249,19 @@ async function runMigrations() {
 
     for (const m of pending) {
       process.stdout.write(`  ⏳ ${m.version}\n     ${m.description}... `);
+      await client.query('SAVEPOINT migration_step');
       try {
         await m.up(client);
         await client.query(
           'INSERT INTO migration_history (version, description) VALUES ($1, $2)',
           [m.version, m.description]
         );
+        await client.query('RELEASE SAVEPOINT migration_step');
         console.log('✅');
       } catch (stepErr) {
+        await client.query('ROLLBACK TO SAVEPOINT migration_step').catch(() => {});
+        await client.query('RELEASE SAVEPOINT migration_step').catch(() => {});
+
         // Khusus error "kolom tidak ada" saat drop — aman diabaikan
         if (stepErr.code === '42703' || stepErr.code === '42P01') {
           console.log('⏭️  (sudah tidak ada, dilewati)');
