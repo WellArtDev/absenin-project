@@ -422,6 +422,7 @@ export default function QRPage() {
           </div>
         )}
       </div>
+    </div>
     </>
   );
 }

@@ -383,6 +383,7 @@ export default function SlipsPage() {
           </div>
         )}
       </div>
+    </div>
     </>
   );
 }
