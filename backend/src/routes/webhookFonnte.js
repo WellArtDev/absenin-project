@@ -87,13 +87,24 @@ router.post('/', async (req, res) => {
 
     // ─── Process Location ───
     let locationData = null;
-    if (location && location.latitude && location.longitude) {
-      locationData = {
-        latitude: parseFloat(location.latitude),
-        longitude: parseFloat(location.longitude)
-      };
-      console.log(`📍 Location: ${locationData.latitude}, ${locationData.longitude}`);
-      if (!message || message.trim() === '') {
+    if (location) {
+      // Fonnte sends location as STRING: "-6.3339631,106.7703935"
+      // Or as OBJECT: { latitude: -6.2, longitude: 106.8 }
+      if (typeof location === 'string') {
+        const [lat, lng] = location.split(',').map(s => parseFloat(s.trim()));
+        if (!isNaN(lat) && !isNaN(lng)) {
+          locationData = { latitude: lat, longitude: lng };
+          console.log(`📍 Location parsed from string: ${lat}, ${lng}`);
+        }
+      } else if (location.latitude && location.longitude) {
+        locationData = {
+          latitude: parseFloat(location.latitude),
+          longitude: parseFloat(location.longitude)
+        };
+        console.log(`📍 Location from object: ${locationData.latitude}, ${locationData.longitude}`);
+      }
+
+      if (locationData && (!message || message.trim() === '' || message === 'non-text message')) {
         message = 'HADIR';
       }
     }
