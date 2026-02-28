@@ -75,9 +75,9 @@ router.post('/test', authenticate, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Manager belum dikonfigurasi' });
     }
 
-    const { sendWhatsAppMessage } = require('../helpers/whatsappHelper');
+    const { sendWA } = require('../helpers/whatsapp');
     const testMessage = `🧪 *TEST NOTIFIKASI*\n\n${message}`;
-    const result = await sendWhatsAppMessage(companyId, manager.phone, testMessage);
+    const result = await sendWA(companyId, manager.phone, testMessage);
 
     res.json({ success: true, message: 'Test notifikasi terkirim', data: result });
   } catch (error) {

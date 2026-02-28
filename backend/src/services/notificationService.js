@@ -1,5 +1,5 @@
 const { query } = require('../config/db');
-const { sendWhatsAppMessage } = require('../helpers/whatsappHelper');
+const { sendWA } = require('../helpers/whatsapp');
 
 class NotificationService {
   // Check if notifications are enabled for an event type
@@ -49,7 +49,7 @@ class NotificationService {
 
       // Send WhatsApp message
       const fullMessage = `🔔 *NOTIFIKASI ABSENIN*\n\n${message}\n\n_Karyawan: ${employee.name} (${employee.employee_id || '-'})_`;
-      const result = await sendWhatsAppMessage(companyId, manager.phone, fullMessage);
+      const result = await sendWA(companyId, manager.phone, fullMessage);
 
       // Log the notification
       await query(`
