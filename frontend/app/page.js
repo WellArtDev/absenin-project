@@ -391,8 +391,6 @@ export default function LandingPage() {
               })}
             </div>
           )}
-            ))}
-          </div>
           <p style={{textAlign:'center',color:'#94a3b8',fontSize:13,marginTop:32}}>Semua paket termasuk dukungan teknis. Pembayaran via transfer bank, dikonfirmasi manual. Cancel kapan saja.</p>
         </div>
       </section>

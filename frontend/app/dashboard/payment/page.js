@@ -260,8 +260,8 @@ export default function PaymentPage() {
                 <p className="text-sm font-bold text-wa-dark mb-2">Transfer ke:</p>
                 {banks.map((bank) => (
                   <div key={bank.id} className="text-sm">
-                    <p><strong>{bank.bank_name}</strong>: {bank.account_number} ({bank.account_name})
-                  </p>
+                    <p><strong>{bank.bank_name}</strong>: {bank.account_number} ({bank.account_name})</p>
+                  </div>
                 ))}
               </div>
             )}
