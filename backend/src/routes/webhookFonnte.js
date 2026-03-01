@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
     provider: 'Fonnte',
     version: '1.0.0',
     features: ['multi-tenant', 'per-device-routing', 'selfie', 'location', 'overtime'],
-    documentation: 'https://fonnte.com'
+    documentation: 'https://md.fonnte.com/new/register.php?ref=201'
   });
 });
 

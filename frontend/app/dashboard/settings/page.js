@@ -228,11 +228,24 @@ export default function SettingsPage() {
                 type="text"
                 autoComplete="off"
                 defaultValue={settings.has_wa_token ? settings.wa_api_token : ''}
-                placeholder={settings.has_wa_token ? 'Kosongkan jika tidak ingin ganti' : 'Paste token dari fonnte.com'}
+                placeholder={settings.has_wa_token ? 'Kosongkan jika tidak ingin ganti' : 'Paste token dari halaman referral Fonnte'}
                 className={inputCls}
               />
               <p className="text-xs text-gray-400 mt-1">
-                {settings.has_wa_token ? '💡 Kosongkan = tetap pakai token lama' : '💡 Daftar di fonnte.com → Dashboard → Copy Token'}
+                {settings.has_wa_token ? '💡 Kosongkan = tetap pakai token lama' : (
+                  <>
+                    {'💡 Daftar di '}
+                    <a
+                      href="https://md.fonnte.com/new/register.php?ref=201"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-blue-600"
+                    >
+                      fonnte.com
+                    </a>
+                    {' → Dashboard → Copy Token'}
+                  </>
+                )}
               </p>
             </div>
             <div>
@@ -246,7 +259,18 @@ export default function SettingsPage() {
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
             <p className="text-sm text-blue-700 font-semibold mb-2">📌 Cara Setup:</p>
             <ol className="text-xs text-blue-600 space-y-1 list-decimal list-inside">
-              <li>Daftar di <strong>fonnte.com</strong> → Connect WhatsApp</li>
+              <li>
+                Daftar di{' '}
+                <a
+                  href="https://md.fonnte.com/new/register.php?ref=201"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-semibold"
+                >
+                  fonnte.com
+                </a>
+                {' '}→ Connect WhatsApp
+              </li>
               <li>Copy Token dari Dashboard Fonnte</li>
               <li>Isi URL: <code className="bg-blue-100 px-1 rounded">https://api.fonnte.com/send</code></li>
               <li>Isi Token dan Nomor Device di atas</li>

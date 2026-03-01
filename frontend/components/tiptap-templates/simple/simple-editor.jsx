@@ -78,7 +78,8 @@ import content from "@/components/tiptap-templates/simple/data/content.json"
 const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
-  isMobile
+  isMobile,
+  showThemeToggle = true,
 }) => {
   return (
     <>
@@ -126,9 +127,11 @@ const MainToolbarContent = ({
       </ToolbarGroup>
       <Spacer />
       {isMobile && <ToolbarSeparator />}
-      <ToolbarGroup>
-        <ThemeToggle />
-      </ToolbarGroup>
+      {showThemeToggle && (
+        <ToolbarGroup>
+          <ThemeToggle />
+        </ToolbarGroup>
+      )}
     </>
   );
 }
@@ -248,7 +251,8 @@ export function SimpleEditor({
             <MainToolbarContent
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
-              isMobile={isMobile} />
+              isMobile={isMobile}
+              showThemeToggle={!embedded} />
           ) : (
             <MobileToolbarContent
               type={mobileView === "highlighter" ? "highlighter" : "link"}

@@ -38,8 +38,8 @@ function normalizeContentHtml(html = '') {
   return String(html)
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/\sstyle=(['"]).*?\1/gi, '')
-    .replace(/\sclass=(['"]).*?\1/gi, '');
+    .replace(/\son\w+=(['"]).*?\1/gi, '')
+    .replace(/\shref=(['"])javascript:.*?\1/gi, ' href="#"');
 }
 
 export async function generateMetadata({ params }) {
