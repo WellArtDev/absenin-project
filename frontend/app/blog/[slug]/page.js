@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import styles from './blog-detail.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -199,7 +200,7 @@ export default async function BlogDetailPage({ params }) {
               </div>
             </div>
             <div
-              className="prose prose-gray max-w-none bg-white border border-gray-200 p-6 md:p-10 prose-headings:text-[#075E54] prose-a:text-[#128C7E] [&_*]:max-w-full [&_*]:whitespace-normal [&_*]:break-words [&_img]:h-auto [&_img]:my-6 [&_table]:block [&_table]:overflow-x-auto [&_pre]:overflow-x-auto"
+              className={styles.article}
               dangerouslySetInnerHTML={{ __html: normalizedContent }}
             />
           </div>
