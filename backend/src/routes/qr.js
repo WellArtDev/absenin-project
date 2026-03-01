@@ -1,19 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const qrService = require('../services/qrService');
-const { authenticate } = require('../middleware/auth');
-
-// Get all QR codes for company
-router.get('/', authenticate, async (req, res) => {
-  try {
-    const companyId = req.user.companyId;
-    const { date, active_only } = req.query;
-    const qrcodes = await qrService.getQRCodes(companyId, { date, active_only });
-    res.json({ success: true, data: qrcodes });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+const { authenticate, requireFeature } = require('../middleware/auth');
 
 // Public endpoint: resolve QR code to WhatsApp target
 router.get('/public/:code', async (req, res) => {
@@ -26,7 +14,7 @@ router.get('/public/:code', async (req, res) => {
 });
 
 // Get QR code by ID
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', authenticate, requireFeature('qr_attendance'), async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const qr = await qrService.getQRById(req.params.id, companyId);
@@ -37,7 +25,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Create new QR code
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, requireFeature('qr_attendance'), async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const userId = req.user.userId;
@@ -49,7 +37,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // Update QR code
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', authenticate, requireFeature('qr_attendance'), async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const qr = await qrService.updateQR(req.params.id, companyId, req.body);
@@ -60,7 +48,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Delete QR code
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', authenticate, requireFeature('qr_attendance'), async (req, res) => {
   try {
     const companyId = req.user.companyId;
     await qrService.deleteQR(req.params.id, companyId);
@@ -89,8 +77,20 @@ router.post('/scan/:code', async (req, res) => {
   }
 });
 
+// Get all QR codes for company
+router.get('/', authenticate, requireFeature('qr_attendance'), async (req, res) => {
+  try {
+    const companyId = req.user.companyId;
+    const { date, active_only } = req.query;
+    const qrcodes = await qrService.getQRCodes(companyId, { date, active_only });
+    res.json({ success: true, data: qrcodes });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Get scan logs for QR code
-router.get('/:id/logs', authenticate, async (req, res) => {
+router.get('/:id/logs', authenticate, requireFeature('qr_attendance'), async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const logs = await qrService.getScanLogs(req.params.id, companyId);

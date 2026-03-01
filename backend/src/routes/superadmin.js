@@ -28,6 +28,57 @@ const uploadBlogImage = multer({
   }
 });
 
+const FEATURE_ALIASES = {
+  'absensi whatsapp': 'attendance',
+  absensi: 'attendance',
+  attendance: 'attendance',
+  'selfie verification': 'selfie',
+  selfie: 'selfie',
+  gps: 'gps',
+  'gps tracking': 'gps',
+  dashboard: 'dashboard',
+  analytics: 'dashboard',
+  'export csv': 'export_csv',
+  export_csv: 'export_csv',
+  'manajemen lembur': 'overtime',
+  lembur: 'overtime',
+  overtime: 'overtime',
+  'manajemen cuti': 'leave_management',
+  cuti: 'leave_management',
+  leave_management: 'leave_management',
+  payroll: 'payroll',
+  'slip absensi': 'attendance_slip',
+  attendance_slip: 'attendance_slip',
+  'manajemen shift': 'shift_management',
+  shift: 'shift_management',
+  shift_management: 'shift_management',
+  'lokasi kantor': 'office_locations',
+  office_locations: 'office_locations',
+  'qr attendance': 'qr_attendance',
+  'qr code': 'qr_attendance',
+  qr_attendance: 'qr_attendance',
+  'notifikasi manager': 'notifications',
+  notifications: 'notifications',
+  'broadcast whatsapp': 'broadcast',
+  broadcast: 'broadcast',
+  'multi cabang': 'multi_branch',
+  multi_branch: 'multi_branch',
+  'api access': 'api_access',
+  api_access: 'api_access'
+};
+
+const normalizeFeatureKey = (feature) => {
+  if (feature === null || feature === undefined) return '';
+  const normalized = String(feature).trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!normalized) return '';
+  return FEATURE_ALIASES[normalized] || normalized.replace(/ /g, '_');
+};
+
+const sanitizeFeatures = (features) => {
+  if (!Array.isArray(features)) return [];
+  return [...new Set(features.map(normalizeFeatureKey).filter(Boolean))];
+};
+
 const ensureBlogTables = async () => {
   await query(`
     CREATE TABLE IF NOT EXISTS blog_posts (
@@ -116,6 +167,24 @@ router.get('/companies', async (req, res) => {
 router.put('/companies/:id', async (req, res) => {
   try {
     const { is_active, plan, max_employees, plan_expires_at } = req.body;
+    const requestedMaxEmployees = max_employees !== undefined && max_employees !== null
+      ? parseInt(max_employees, 10)
+      : null;
+
+    if (requestedMaxEmployees !== null && Number.isFinite(requestedMaxEmployees) && requestedMaxEmployees > 0) {
+      const activeEmployeesResult = await query(
+        'SELECT COUNT(*) as count FROM employees WHERE company_id=$1 AND is_active=true',
+        [req.params.id]
+      );
+      const activeEmployees = parseInt(activeEmployeesResult.rows[0].count, 10) || 0;
+      if (activeEmployees > requestedMaxEmployees) {
+        return res.status(400).json({
+          success: false,
+          message: `Tidak bisa set limit ${requestedMaxEmployees}. Saat ini ada ${activeEmployees} karyawan aktif.`
+        });
+      }
+    }
+
     const result = await query(
       'UPDATE companies SET is_active=COALESCE($1,is_active), plan=COALESCE($2,plan), max_employees=COALESCE($3,max_employees), plan_expires_at=$4, updated_at=CURRENT_TIMESTAMP WHERE id=$5 RETURNING *',
       [is_active, plan, max_employees, plan_expires_at || null, req.params.id]);
@@ -136,9 +205,10 @@ router.post('/plans', async (req, res) => {
   try {
     const { name, slug, price, max_employees, duration_days, features, description, sort_order } = req.body;
     if (!name || !slug) return res.status(400).json({ success: false, message: 'Name & slug required.' });
+    const cleanFeatures = sanitizeFeatures(features);
     const result = await query(
       'INSERT INTO plans (name,slug,price,max_employees,duration_days,features,description,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
-      [name, slug, price || 0, max_employees || 10, duration_days || 30, JSON.stringify(features || []), description || '', sort_order || 0]);
+      [name, slug, price || 0, max_employees || 10, duration_days || 30, JSON.stringify(cleanFeatures), description || '', sort_order || 0]);
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     if (error.code === '23505') return res.status(400).json({ success: false, message: 'Slug sudah ada.' });
@@ -149,11 +219,12 @@ router.post('/plans', async (req, res) => {
 router.put('/plans/:id', async (req, res) => {
   try {
     const { name, price, max_employees, duration_days, features, description, sort_order, is_active } = req.body;
+    const cleanFeatures = features ? sanitizeFeatures(features) : null;
     const result = await query(
       `UPDATE plans SET name=COALESCE($1,name), price=COALESCE($2,price), max_employees=COALESCE($3,max_employees),
         duration_days=COALESCE($4,duration_days), features=COALESCE($5,features), description=$6,
         sort_order=COALESCE($7,sort_order), is_active=COALESCE($8,is_active), updated_at=CURRENT_TIMESTAMP WHERE id=$9 RETURNING *`,
-      [name, price, max_employees, duration_days, features ? JSON.stringify(features) : null, description, sort_order, is_active, req.params.id]);
+      [name, price, max_employees, duration_days, cleanFeatures ? JSON.stringify(cleanFeatures) : null, description, sort_order, is_active, req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Not found.' });
     res.json({ success: true, data: result.rows[0] });
   } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
@@ -222,20 +293,36 @@ router.put('/payments/:id/confirm', async (req, res) => {
     if (payment.rows.length === 0) return res.status(404).json({ success: false, message: 'Not found.' });
     const p = payment.rows[0];
 
-    // Update payment
-    await query('UPDATE payments SET status=\'confirmed\', confirmed_by=$1, confirmed_at=CURRENT_TIMESTAMP WHERE id=$2', [req.user.userId, req.params.id]);
-
     // Upgrade company
     const plan = await query('SELECT * FROM plans WHERE id=$1', [p.plan_id]);
     if (plan.rows.length > 0) {
       const pl = plan.rows[0];
+      const activeEmployeesResult = await query(
+        'SELECT COUNT(*) as count FROM employees WHERE company_id=$1 AND is_active=true',
+        [p.company_id]
+      );
+      const activeEmployees = parseInt(activeEmployeesResult.rows[0].count, 10) || 0;
+      const targetLimit = parseInt(pl.max_employees, 10) || 0;
+
+      if (targetLimit > 0 && activeEmployees > targetLimit) {
+        return res.status(400).json({
+          success: false,
+          message: `Konfirmasi gagal. Paket ${pl.name} limit ${targetLimit} karyawan, tapi perusahaan punya ${activeEmployees} karyawan aktif.`
+        });
+      }
+
+      // Update payment
+      await query('UPDATE payments SET status=\'confirmed\', confirmed_by=$1, confirmed_at=CURRENT_TIMESTAMP WHERE id=$2', [req.user.userId, req.params.id]);
+
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (pl.duration_days || 30));
       await query('UPDATE companies SET plan=$1, max_employees=$2, plan_expires_at=$3, is_active=true WHERE id=$4',
         [pl.slug, pl.max_employees, expiresAt, p.company_id]);
+
+      return res.json({ success: true, message: 'Pembayaran dikonfirmasi & plan diupgrade!' });
     }
 
-    res.json({ success: true, message: 'Pembayaran dikonfirmasi & plan diupgrade!' });
+    return res.status(400).json({ success: false, message: 'Paket tidak ditemukan.' });
   } catch (error) { console.error(error); res.status(500).json({ success: false, message: 'Server error.' }); }
 });
 

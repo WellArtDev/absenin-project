@@ -5,6 +5,21 @@ const { query } = require('../config/db');
 const { authenticate } = require('../middleware/auth');
 router.use(authenticate);
 
+const getCompanyEmployeeLimit = async (companyId) => {
+  const companyResult = await query('SELECT max_employees FROM companies WHERE id=$1', [companyId]);
+  if (companyResult.rows.length === 0) {
+    throw new Error('Company tidak ditemukan.');
+  }
+
+  const maxEmployees = parseInt(companyResult.rows[0].max_employees, 10);
+  return Number.isFinite(maxEmployees) && maxEmployees > 0 ? maxEmployees : 10;
+};
+
+const getActiveEmployeesCount = async (companyId) => {
+  const countResult = await query('SELECT COUNT(*) FROM employees WHERE company_id=$1 AND is_active=true', [companyId]);
+  return parseInt(countResult.rows[0].count, 10) || 0;
+};
+
 router.get('/', async (req, res) => {
   try {
     const { search, division_id, position_id, employment_status, page = 1, limit = 50 } = req.query;
@@ -63,10 +78,10 @@ router.post('/', [
     const ex = await query('SELECT id FROM employees WHERE phone_number=$1', [phone_number]);
     if (ex.rows.length > 0) return res.status(400).json({ success: false, message: 'Nomor HP sudah terdaftar.' });
     
-    const cnt = await query('SELECT COUNT(*) FROM employees WHERE company_id=$1 AND is_active=true', [req.user.companyId]);
-    const comp = await query('SELECT max_employees FROM companies WHERE id=$1', [req.user.companyId]);
-    if (parseInt(cnt.rows[0].count) >= comp.rows[0].max_employees) {
-      return res.status(400).json({ success: false, message: `Batas ${comp.rows[0].max_employees} karyawan tercapai. Upgrade paket.` });
+    const activeEmployees = await getActiveEmployeesCount(req.user.companyId);
+    const employeeLimit = await getCompanyEmployeeLimit(req.user.companyId);
+    if (activeEmployees >= employeeLimit) {
+      return res.status(400).json({ success: false, message: `Batas ${employeeLimit} karyawan aktif tercapai. Upgrade paket untuk tambah karyawan.` });
     }
 
     // Auto generate employee code if not provided

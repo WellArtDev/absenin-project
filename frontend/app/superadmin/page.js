@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import api from '@/lib/api';
+import { PLAN_FEATURE_OPTIONS, getFeatureLabel, normalizePlanFeatureKey } from '@/lib/planFeatures';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
 const toImageUrl = (url) => {
@@ -113,7 +114,9 @@ export default function SuperadminPage() {
         duration_days: plan.duration_days,
         description: plan.description || '',
         sort_order: plan.sort_order || 0,
-        features: Array.isArray(plan.features) ? plan.features : []
+        features: Array.isArray(plan.features)
+          ? [...new Set(plan.features.map(normalizePlanFeatureKey).filter(Boolean))]
+          : []
       });
     } else {
       setEditingPlan(null);
@@ -131,11 +134,15 @@ export default function SuperadminPage() {
   const savePlan = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...planForm,
+        features: [...new Set((planForm.features || []).map(normalizePlanFeatureKey).filter(Boolean))]
+      };
       if (editingPlan) {
-        await api.updateSAPlan(editingPlan.id, planForm);
+        await api.updateSAPlan(editingPlan.id, payload);
         alert('✅ Paket berhasil diupdate!');
       } else {
-        await api.createSAPlan(planForm);
+        await api.createSAPlan(payload);
         alert('✅ Paket berhasil ditambahkan!');
       }
       closePlanForm();
@@ -152,19 +159,11 @@ export default function SuperadminPage() {
 
   const delPlan = async (id) => { if (!confirm('Hapus plan?')) return; try { await api.deleteSAPlan(id); loadPlans(); } catch (e) { alert(e.message); } };
 
-  const updatePlanFeature = (index, value) => {
-    const newFeatures = [...planForm.features];
-    newFeatures[index] = value;
-    setPlanForm({ ...planForm, features: newFeatures });
-  };
-
-  const addPlanFeature = () => {
-    setPlanForm({ ...planForm, features: [...planForm.features, ''] });
-  };
-
-  const removePlanFeature = (index) => {
-    const newFeatures = planForm.features.filter((_, i) => i !== index);
-    setPlanForm({ ...planForm, features: newFeatures });
+  const togglePlanFeature = (featureKey) => {
+    const nextFeatures = planForm.features.includes(featureKey)
+      ? planForm.features.filter((f) => f !== featureKey)
+      : [...planForm.features, featureKey];
+    setPlanForm({ ...planForm, features: nextFeatures });
   };
   const addBank = async (e) => {
     e.preventDefault();
@@ -399,23 +398,21 @@ export default function SuperadminPage() {
                 </div>
                 <div><label className="block text-sm font-medium mb-1">Deskripsi</label><input value={planForm.description} onChange={e => setPlanForm({ ...planForm, description: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border text-sm" /></div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Fitur</label>
-                  <div className="space-y-2">
-                    {planForm.features.map((feat, i) => (
-                      <div key={i} className="flex gap-2">
+                  <label className="block text-sm font-medium mb-2">Fitur Paket (centang fitur yang didapat user)</label>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {PLAN_FEATURE_OPTIONS.map((feature) => (
+                      <label key={feature.key} className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-white hover:bg-gray-50 text-sm">
                         <input
-                          type="text"
-                          value={feat}
-                          onChange={e => updatePlanFeature(i, e.target.value)}
-                          className="flex-1 px-3 py-2.5 rounded-xl border text-sm"
-                          placeholder="Contoh: attendance, selfie, gps"
+                          type="checkbox"
+                          checked={planForm.features.includes(feature.key)}
+                          onChange={() => togglePlanFeature(feature.key)}
+                          className="accent-wa-primary"
                         />
-                        <button type="button" onClick={() => removePlanFeature(i)} className="text-red-500 hover:bg-red-50 px-3 rounded-lg text-sm">Hapus</button>
-                      </div>
+                        <span>{feature.label}</span>
+                      </label>
                     ))}
-                    <button type="button" onClick={addPlanFeature} className="text-sm text-brand-600 hover:text-brand-700 font-medium">+ Tambah Fitur</button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Format fitur: attendance, selfie, gps, dashboard, export_csv, dll</p>
+                  <p className="text-xs text-gray-400 mt-1">Fitur yang tidak dicentang tidak akan aktif untuk perusahaan yang membeli paket ini.</p>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="submit" className="bg-wa-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-wa-dark">{editingPlan ? '💾 Update Paket' : '💾 Simpan Paket'}</button>
@@ -433,7 +430,14 @@ export default function SuperadminPage() {
                 <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
               </tr></thead><tbody className="divide-y">{plans.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4"><p className="text-sm font-medium">{p.name}</p><p className="text-xs text-gray-500">{p.slug}</p></td>
+                  <td className="px-6 py-4">
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-gray-500">{p.slug}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {(Array.isArray(p.features) ? p.features : []).slice(0, 3).map(getFeatureLabel).join(', ') || 'Tanpa fitur'}
+                      {(Array.isArray(p.features) ? p.features.length : 0) > 3 ? '...' : ''}
+                    </p>
+                  </td>
                   <td className="px-4 py-4 text-right text-sm font-medium">Rp {Number(p.price).toLocaleString('id-ID')}</td>
                   <td className="px-4 py-4 text-center text-sm">{p.max_employees}</td>
                   <td className="px-4 py-4 text-center text-sm">{p.duration_days} hari</td>

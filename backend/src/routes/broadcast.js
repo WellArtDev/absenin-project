@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const broadcastService = require('../services/broadcastService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
 const { query } = require('../config/db');
 
+router.use(authenticate, requireFeature('broadcast'));
+
 // Send broadcast
-router.post('/send', authenticate, async (req, res) => {
+router.post('/send', async (req, res) => {
   try {
     const { message, target = 'all', division_id, position_id, image_url } = req.body;
     const companyId = req.user.companyId;
@@ -17,8 +19,8 @@ router.post('/send', authenticate, async (req, res) => {
     const result = await broadcastService.sendBroadcast(companyId, {
       message,
       target,
-      divisionId,
-      positionId,
+      divisionId: division_id,
+      positionId: position_id,
       imageUrl: image_url
     });
 
@@ -34,7 +36,7 @@ router.post('/send', authenticate, async (req, res) => {
 });
 
 // Get broadcast history
-router.get('/history', authenticate, async (req, res) => {
+router.get('/history', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const history = await broadcastService.getHistory(companyId, 50);
@@ -50,7 +52,7 @@ router.get('/history', authenticate, async (req, res) => {
 });
 
 // Get broadcast stats
-router.get('/stats', authenticate, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const companyId = req.user.companyId;
 

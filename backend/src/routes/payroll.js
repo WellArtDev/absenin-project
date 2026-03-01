@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const payrollService = require('../services/payrollService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
+
+router.use(authenticate, requireFeature('payroll'));
 
 // Get payroll settings
-router.get('/settings', authenticate, async (req, res) => {
+router.get('/settings', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const settings = await payrollService.getPayrollSettings(companyId);
@@ -15,7 +17,7 @@ router.get('/settings', authenticate, async (req, res) => {
 });
 
 // Update payroll settings
-router.put('/settings', authenticate, async (req, res) => {
+router.put('/settings', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const settings = await payrollService.updatePayrollSettings(companyId, req.body);
@@ -26,7 +28,7 @@ router.put('/settings', authenticate, async (req, res) => {
 });
 
 // Get all payroll periods
-router.get('/periods', authenticate, async (req, res) => {
+router.get('/periods', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const periods = await payrollService.getPayrollPeriods(companyId);
@@ -37,7 +39,7 @@ router.get('/periods', authenticate, async (req, res) => {
 });
 
 // Get or create payroll period
-router.get('/periods/:month/:year', authenticate, async (req, res) => {
+router.get('/periods/:month/:year', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { month, year } = req.params;
@@ -49,7 +51,7 @@ router.get('/periods/:month/:year', authenticate, async (req, res) => {
 });
 
 // Calculate payroll for a period
-router.post('/periods/:month/:year/calculate', authenticate, async (req, res) => {
+router.post('/periods/:month/:year/calculate', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { month, year } = req.params;
@@ -68,7 +70,7 @@ router.post('/periods/:month/:year/calculate', authenticate, async (req, res) =>
 });
 
 // Get payroll records for a period
-router.get('/periods/:periodId/records', authenticate, async (req, res) => {
+router.get('/periods/:periodId/records', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { periodId } = req.params;
@@ -80,7 +82,7 @@ router.get('/periods/:periodId/records', authenticate, async (req, res) => {
 });
 
 // Update individual payroll record
-router.put('/records/:recordId', authenticate, async (req, res) => {
+router.put('/records/:recordId', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { recordId } = req.params;
@@ -92,7 +94,7 @@ router.put('/records/:recordId', authenticate, async (req, res) => {
 });
 
 // Approve payroll period
-router.put('/periods/:periodId/approve', authenticate, async (req, res) => {
+router.put('/periods/:periodId/approve', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { periodId } = req.params;
@@ -104,7 +106,7 @@ router.put('/periods/:periodId/approve', authenticate, async (req, res) => {
 });
 
 // Mark payroll as paid
-router.put('/periods/:periodId/paid', authenticate, async (req, res) => {
+router.put('/periods/:periodId/paid', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { periodId } = req.params;

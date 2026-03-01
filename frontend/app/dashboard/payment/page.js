@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
+import { getFeatureLabel } from '@/lib/planFeatures';
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -170,7 +171,7 @@ export default function PaymentPage() {
                 {Array.isArray(plan.features) && plan.features.map((f, i) => (
                   <li key={i} className="text-sm flex items-center gap-2">
                     <span className="text-green-500">✓</span>
-                    <span className="capitalize">{typeof f === 'string' ? f.replace(/_/g, ' ') : f}</span>
+                    <span>{getFeatureLabel(f)}</span>
                   </li>
                 ))}
                 <li className="text-sm flex items-center gap-2">

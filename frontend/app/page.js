@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getFeatureLabel } from '@/lib/planFeatures';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://absenin.com';
@@ -77,6 +78,7 @@ export default function LandingPage() {
               <span className="text-xs bg-brand-100 text-brand-600 px-2 py-0.5 rounded-full font-medium">v3</span>
             </div>
             <div className="flex items-center gap-3">
+              <Link href="/" className="text-sm font-medium text-gray-700 px-4 py-2 hover:text-brand-600">Beranda</Link>
               <Link href="/blog" className="text-sm font-medium text-gray-700 px-4 py-2 hover:text-brand-600">Blog</Link>
               <Link href="/login" className="text-sm font-medium text-gray-700 px-4 py-2">Masuk</Link>
               <Link href="/register" className="text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 px-5 py-2.5 rounded-lg shadow-sm">Mulai Gratis</Link>
@@ -95,7 +97,7 @@ export default function LandingPage() {
           </div>
           <div style={{display:'flex',gap:28,alignItems:'center'}}>
             <div style={{display:'flex',gap:24}} className="hidden md:flex">
-              {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ'],['/blog','Blog']].map(([h,l])=>(
+              {[['/','Beranda'],['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ'],['/blog','Blog']].map(([h,l])=>(
                 <a key={h} href={h} style={{fontSize:14,fontWeight:600,color:'#64748b',textDecoration:'none',transition:'color .15s'}} onMouseOver={e=>e.target.style.color='#25D366'} onMouseOut={e=>e.target.style.color='#64748b'}>{l}</a>
               ))}
             </div>
@@ -410,7 +412,7 @@ export default function LandingPage() {
                         {features.map((f,j) => (
                           <li key={j} style={{display:'flex',alignItems:'center',gap:10,fontSize:13,color:'#374151'}}>
                             <span style={{width:20,height:20,borderRadius:'50%',background:'#dcfce7',color:'#128C7E',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>
-                            <span style={{textTransform:'capitalize'}}>{typeof f === 'string' ? f.replace(/_/g, ' ') : f}</span>
+                            <span>{getFeatureLabel(f)}</span>
                           </li>
                         ))}
                         {features.length === 0 && (
@@ -515,7 +517,7 @@ export default function LandingPage() {
             <div>
               <h4 style={{color:'#fff',fontWeight:800,fontSize:14,marginBottom:20}}>Produk</h4>
               <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ']].map(([h,l])=>(
+                {[['/','Beranda'],['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#harga','Harga'],['#faq','FAQ'],['/blog','Blog']].map(([h,l])=>(
                   <a key={h} href={h} style={{fontSize:14,color:'#475569',textDecoration:'none',transition:'color .15s'}}>{l}</a>
                 ))}
               </div>

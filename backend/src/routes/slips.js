@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const slipService = require('../services/slipService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
+
+router.use(authenticate, requireFeature('attendance_slip'));
 
 // Get all employees with attendance summary for a month
-router.get('/employees', authenticate, async (req, res) => {
+router.get('/employees', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { month, year } = req.query;
@@ -20,7 +22,7 @@ router.get('/employees', authenticate, async (req, res) => {
 });
 
 // Get attendance slip data for specific employee
-router.get('/employee/:employeeId', authenticate, async (req, res) => {
+router.get('/employee/:employeeId', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { employeeId } = req.params;
@@ -37,7 +39,7 @@ router.get('/employee/:employeeId', authenticate, async (req, res) => {
 });
 
 // Get full report for all employees
-router.get('/report', authenticate, async (req, res) => {
+router.get('/report', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { month, year } = req.query;

@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const shiftService = require('../services/shiftService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
+
+router.use(authenticate, requireFeature('shift_management'));
 
 // Get all shifts for company
-router.get('/', authenticate, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const shifts = await shiftService.getShifts(companyId);
@@ -15,7 +17,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Get shift by ID
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const shift = await shiftService.getShiftById(req.params.id, companyId);
@@ -26,7 +28,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Create shift
-router.post('/', authenticate, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const shift = await shiftService.createShift(companyId, req.body);
@@ -37,7 +39,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // Update shift
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const shift = await shiftService.updateShift(req.params.id, companyId, req.body);
@@ -48,7 +50,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Delete shift
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     await shiftService.deleteShift(req.params.id, companyId);
@@ -59,7 +61,7 @@ router.delete('/:id', authenticate, async (req, res) => {
 });
 
 // Assign shift to employee
-router.post('/assign', authenticate, async (req, res) => {
+router.post('/assign', async (req, res) => {
   try {
     const { employee_id, shift_id, effective_date } = req.body;
 
@@ -75,7 +77,7 @@ router.post('/assign', authenticate, async (req, res) => {
 });
 
 // Get employees with their shifts
-router.get('/employees/list', authenticate, async (req, res) => {
+router.get('/employees/list', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const employees = await shiftService.getEmployeesWithShifts(companyId);
@@ -86,7 +88,7 @@ router.get('/employees/list', authenticate, async (req, res) => {
 });
 
 // Get employee shift for specific date
-router.get('/employee/:employeeId', authenticate, async (req, res) => {
+router.get('/employee/:employeeId', async (req, res) => {
   try {
     const { date } = req.query;
     if (!date) {

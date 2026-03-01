@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const locationService = require('../services/locationService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
+
+router.use(authenticate, requireFeature('office_locations'));
 
 // Get all locations for company
-router.get('/', authenticate, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const locations = await locationService.getLocations(companyId);
@@ -15,7 +17,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Get location by ID
-router.get('/:id', authenticate, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const location = await locationService.getLocationById(req.params.id, companyId);
@@ -26,7 +28,7 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 // Create location
-router.post('/', authenticate, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const location = await locationService.createLocation(companyId, req.body);
@@ -37,7 +39,7 @@ router.post('/', authenticate, async (req, res) => {
 });
 
 // Update location
-router.put('/:id', authenticate, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const location = await locationService.updateLocation(req.params.id, companyId, req.body);
@@ -48,7 +50,7 @@ router.put('/:id', authenticate, async (req, res) => {
 });
 
 // Delete location
-router.delete('/:id', authenticate, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     await locationService.deleteLocation(req.params.id, companyId);
@@ -59,7 +61,7 @@ router.delete('/:id', authenticate, async (req, res) => {
 });
 
 // Validate location (public endpoint for check-in)
-router.post('/validate', authenticate, async (req, res) => {
+router.post('/validate', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { latitude, longitude } = req.body;
@@ -76,7 +78,7 @@ router.post('/validate', authenticate, async (req, res) => {
 });
 
 // Get check-in history for location
-router.get('/:id/checkins', authenticate, async (req, res) => {
+router.get('/:id/checkins', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const checkins = await locationService.getLocationCheckIns(req.params.id, companyId);
@@ -87,7 +89,7 @@ router.get('/:id/checkins', authenticate, async (req, res) => {
 });
 
 // Get location statistics
-router.get('/stats/summary', authenticate, async (req, res) => {
+router.get('/stats/summary', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const stats = await locationService.getLocationStats(companyId);

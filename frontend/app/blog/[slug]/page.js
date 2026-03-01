@@ -100,21 +100,34 @@ export default async function BlogDetailPage({ params }) {
 
   return (
     <main className="min-h-screen bg-[#f3f6f4] text-[#111111]">
-      <header className="bg-white/95 backdrop-blur border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-white border border-green-100 p-1 inline-flex">
-              <img src="/logo-absenin.svg" alt="Absenin Logo" className="w-full h-full object-contain" />
-            </span>
-            <span className="text-xl font-bold text-gray-900">Absenin</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
-            <Link href="/#fitur" className="hover:text-[#25D366]">Fitur</Link>
-            <Link href="/#harga" className="hover:text-[#25D366]">Harga</Link>
-            <Link href="/blog" className="text-[#128C7E]">Blog</Link>
-            <Link href="/login" className="hover:text-[#25D366]">Masuk</Link>
-            <Link href="/register" className="bg-[#25D366] hover:bg-[#128C7E] text-white px-4 py-2 rounded-lg">Mulai Gratis</Link>
-          </nav>
+      <header style={{background:'rgba(255,255,255,.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid #f1f5f9',position:'sticky',top:0,zIndex:50}}>
+        <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:64}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:34,height:34,borderRadius:10,background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(37,211,102,.25)',padding:'5px',border:'1px solid #d1fae5'}}>
+              <img src="/logo-absenin.svg" alt="Absenin Logo" style={{width:'100%',height:'100%',objectFit:'contain'}} />
+            </div>
+            <span style={{fontSize:20,fontWeight:900,color:'#075E54',letterSpacing:'-0.5px'}}>Absenin</span>
+          </div>
+          <div style={{display:'flex',gap:28,alignItems:'center'}}>
+            <div style={{display:'flex',gap:24}} className="hidden md:flex">
+              {[
+                ['/', 'Beranda'],
+                ['/#fitur', 'Fitur'],
+                ['/#cara-kerja', 'Cara Kerja'],
+                ['/#harga', 'Harga'],
+                ['/#faq', 'FAQ'],
+                ['/blog', 'Blog']
+              ].map(([h, l]) => (
+                <Link key={h} href={h} className={`text-sm font-semibold transition-colors ${h === '/blog' ? 'text-[#25D366]' : 'text-[#64748b] hover:text-[#25D366]'}`}>
+                  {l}
+                </Link>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:10,alignItems:'center'}}>
+              <Link href="/login" style={{fontSize:14,fontWeight:700,color:'#374151',textDecoration:'none',padding:'8px 14px',borderRadius:10}}>Masuk</Link>
+              <Link href="/register" className="btn-primary" style={{padding:'9px 20px',fontSize:14,borderRadius:12}}>Mulai Gratis →</Link>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -201,37 +214,40 @@ export default async function BlogDetailPage({ params }) {
         </div>
       </section>
 
-      <footer style={{ background: '#020617', padding: '64px 0 36px', color: '#64748b' }}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-10 mb-10">
+      <footer style={{background:'#020617',padding:'72px 0 40px',color:'#475569'}}>
+        <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr',gap:48,marginBottom:56}}>
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-white border border-green-100 p-1">
-                  <img src="/logo-absenin.svg" alt="Absenin Logo" className="w-full h-full object-contain" />
-                </div>
-                <span className="text-white text-xl font-bold">Absenin</span>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
+                <div style={{width:34,height:34,borderRadius:10,background:'linear-gradient(135deg,#25D366,#075E54)',display:'flex',alignItems:'center',justifyContent:'center'}}><span style={{color:'#fff',fontWeight:900,fontSize:15}}>A</span></div>
+                <span style={{fontSize:20,fontWeight:900,color:'#fff',letterSpacing:'-0.5px'}}>Absenin</span>
               </div>
-              <p className="text-sm leading-7 max-w-sm">Sistem absensi karyawan modern via WhatsApp dengan selfie verification, GPS, lembur otomatis, dan payroll.</p>
-            </div>
-            <div>
-              <h4 className="text-white font-bold mb-4">Produk</h4>
-              <div className="space-y-2 text-sm">
-                <Link href="/#fitur" className="block hover:text-[#25D366]">Fitur</Link>
-                <Link href="/#harga" className="block hover:text-[#25D366]">Harga</Link>
-                <Link href="/blog" className="block hover:text-[#25D366]">Blog</Link>
+              <p style={{fontSize:14,lineHeight:1.75,maxWidth:300,margin:'0 0 20px'}}>Sistem absensi karyawan modern via WhatsApp. Multi-tenant SaaS, selfie verification, GPS real-time, HRM lengkap untuk perusahaan Indonesia.</p>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {['Next.js','Node.js','PostgreSQL','WhatsApp','Fonnte','OpenStreetMap'].map(t=>(
+                  <span key={t} style={{background:'rgba(255,255,255,.05)',color:'#475569',fontSize:11,padding:'4px 10px',borderRadius:8,border:'1px solid rgba(255,255,255,.08)'}}>{t}</span>
+                ))}
               </div>
             </div>
             <div>
-              <h4 className="text-white font-bold mb-4">Akun</h4>
-              <div className="space-y-2 text-sm">
-                <Link href="/login" className="block hover:text-[#25D366]">Masuk</Link>
-                <Link href="/register" className="block hover:text-[#25D366]">Daftar Gratis</Link>
+              <h4 style={{color:'#fff',fontWeight:800,fontSize:14,marginBottom:20}}>Produk</h4>
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                {[['/','Beranda'],['/#fitur','Fitur'],['/#cara-kerja','Cara Kerja'],['/#harga','Harga'],['/#faq','FAQ'],['/blog','Blog']].map(([h,l])=>(
+                  <Link key={h} href={h} style={{fontSize:14,color:'#475569',textDecoration:'none',transition:'color .15s'}}>{l}</Link>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 style={{color:'#fff',fontWeight:800,fontSize:14,marginBottom:20}}>Akun</h4>
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                <Link href="/register" style={{fontSize:14,color:'#475569',textDecoration:'none'}}>Daftar Gratis</Link>
+                <Link href="/login" style={{fontSize:14,color:'#475569',textDecoration:'none'}}>Masuk</Link>
               </div>
             </div>
           </div>
-          <div className="border-t border-white/10 pt-6 text-sm flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
-            <p>© {new Date().getFullYear()} Absenin. All rights reserved.</p>
-            <p>#1st Absensi Karyawan via WhatsApp</p>
+          <div style={{borderTop:'1px solid rgba(255,255,255,.06)',paddingTop:32,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:12}}>
+            <p style={{fontSize:13,margin:0}}>© {new Date().getFullYear()} Absenin. Made with ❤️ By WellArtDev in Indonesia.</p>
+            <p style={{fontSize:13,margin:0}}>#1st Absensi Karyawan via WhatsApp · Multi-Tenant SaaS · HRM Indonesia</p>
           </div>
         </div>
       </footer>

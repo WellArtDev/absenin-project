@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../config/db');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
 const { sendWA } = require('../helpers/whatsapp');
-router.use(authenticate);
+router.use(authenticate, requireFeature('overtime'));
 
 router.get('/', async (req, res) => {
   try {

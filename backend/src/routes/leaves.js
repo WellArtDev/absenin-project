@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../config/db');
-const { authenticate } = require('../middleware/auth');
-router.use(authenticate);
+const { authenticate, requireFeature } = require('../middleware/auth');
+router.use(authenticate, requireFeature('leave_management'));
 
 router.get('/', async (req, res) => {
   try {

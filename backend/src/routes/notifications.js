@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const notificationService = require('../services/notificationService');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireFeature } = require('../middleware/auth');
+
+router.use(authenticate, requireFeature('notifications'));
 
 // Get notification settings
-router.get('/settings', authenticate, async (req, res) => {
+router.get('/settings', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const result = await require('../config/db').query(`
@@ -27,7 +29,7 @@ router.get('/settings', authenticate, async (req, res) => {
 });
 
 // Update notification settings
-router.put('/settings', authenticate, async (req, res) => {
+router.put('/settings', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const result = await notificationService.updateNotificationSettings(companyId, req.body);
@@ -38,7 +40,7 @@ router.put('/settings', authenticate, async (req, res) => {
 });
 
 // Get notification logs
-router.get('/logs', authenticate, async (req, res) => {
+router.get('/logs', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { event_type, employee_id, limit } = req.query;
@@ -50,7 +52,7 @@ router.get('/logs', authenticate, async (req, res) => {
 });
 
 // Get notification statistics
-router.get('/stats', authenticate, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const stats = await notificationService.getNotificationStats(companyId);
@@ -61,7 +63,7 @@ router.get('/stats', authenticate, async (req, res) => {
 });
 
 // Test notification
-router.post('/test', authenticate, async (req, res) => {
+router.post('/test', async (req, res) => {
   try {
     const companyId = req.user.companyId;
     const { message } = req.body;
