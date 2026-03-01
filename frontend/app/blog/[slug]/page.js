@@ -34,8 +34,31 @@ function stripHtml(html = '') {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+function decodeHtmlEntities(value = '') {
+  return String(value)
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/&nbsp;/gi, ' ');
+}
+
+function textToHtml(value = '') {
+  const normalized = String(value).trim();
+  if (!normalized) return '<p></p>';
+
+  return normalized
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br/>')}</p>`)
+    .join('');
+}
+
 function normalizeContentHtml(html = '') {
-  return String(html)
+  const decoded = decodeHtmlEntities(html);
+  const prepared = /<[a-z][\s\S]*>/i.test(decoded) ? decoded : textToHtml(decoded);
+
+  return String(prepared)
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/\son\w+=(['"]).*?\1/gi, '')
