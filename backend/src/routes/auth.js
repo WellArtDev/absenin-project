@@ -6,6 +6,27 @@ const { body, validationResult } = require('express-validator');
 const { query, transaction } = require('../config/db');
 const { authenticate } = require('../middleware/auth');
 
+const FREE_DEFAULT_FEATURES = ['attendance', 'selfie', 'gps', 'dashboard', 'export_csv'];
+const normalizeFeatureKey = (value) => {
+  if (value === null || value === undefined) return '';
+  return String(value).trim().toLowerCase().replace(/\s+/g, '_');
+};
+
+const parseFeatures = (raw) => {
+  if (!raw) return FREE_DEFAULT_FEATURES;
+  let features = raw;
+  if (typeof raw === 'string') {
+    try {
+      features = JSON.parse(raw);
+    } catch {
+      return FREE_DEFAULT_FEATURES;
+    }
+  }
+  if (!Array.isArray(features)) return FREE_DEFAULT_FEATURES;
+  const normalized = features.map(normalizeFeatureKey).filter(Boolean);
+  return normalized.length > 0 ? [...new Set(normalized)] : FREE_DEFAULT_FEATURES;
+};
+
 router.post('/register', [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }),
@@ -65,12 +86,19 @@ router.get('/me', authenticate, async (req, res) => {
       `SELECT u.id,u.email,u.name,u.role,u.phone,u.company_id, c.name as company_name,c.plan,c.max_employees,c.is_active as company_active,
         cs.work_start,cs.work_end,cs.late_tolerance_minutes,cs.require_selfie,cs.overtime_enabled,
         cs.office_latitude,cs.office_longitude,cs.allowed_radius_meters,cs.radius_lock_enabled,
-        cs.wa_api_url,cs.wa_device_number
-       FROM users u JOIN companies c ON u.company_id=c.id LEFT JOIN company_settings cs ON cs.company_id=c.id WHERE u.id=$1`, [req.user.userId]);
+        cs.wa_api_url,cs.wa_device_number,
+        p.features as plan_features
+       FROM users u
+       JOIN companies c ON u.company_id=c.id
+       LEFT JOIN company_settings cs ON cs.company_id=c.id
+       LEFT JOIN plans p ON p.slug=c.plan
+       WHERE u.id=$1`, [req.user.userId]);
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Not found.' });
     const data = result.rows[0];
     // Don't expose sensitive wa_api_token
     data.wa_configured = !!data.wa_api_url;
+    data.company_features = data.role === 'superadmin' ? ['*'] : parseFeatures(data.plan_features);
+    delete data.plan_features;
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.' });

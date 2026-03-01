@@ -3,6 +3,20 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { normalizePlanFeatureKey } from '@/lib/planFeatures';
+
+const BASE_FEATURES = ['attendance', 'selfie', 'gps', 'dashboard', 'export_csv'];
+const TAB_FEATURE_MAP = {
+  qr: 'qr_attendance',
+  shifts: 'shift_management',
+  locations: 'office_locations',
+  broadcast: 'broadcast',
+  notifications: 'notifications',
+  slips: 'attendance_slip',
+  overtime: 'overtime',
+  leaves: 'leave_management',
+  reports: 'export_csv'
+};
 
 export default function DashboardHeader({ title, subtitle, showUser = true }) {
   const router = useRouter();
@@ -31,18 +45,32 @@ export default function DashboardHeader({ title, subtitle, showUser = true }) {
     { id: 'overview', l: '📊 Overview', path: '/dashboard' },
     { id: 'employees', l: '👥 Karyawan', path: '/dashboard/employees' },
     { id: 'attendance', l: '📅 Absensi', path: '/dashboard' },
-    { id: 'qr', l: '📱 QR Code', path: '/dashboard/qr' },
-    { id: 'shifts', l: '🕐 Shift', path: '/dashboard/shifts' },
-    { id: 'locations', l: '📍 Lokasi', path: '/dashboard/locations' },
-    { id: 'broadcast', l: '📢 Broadcast', path: '/dashboard/broadcast' },
-    { id: 'notifications', l: '🔔 Notifikasi', path: '/dashboard/notifications' },
-    { id: 'slips', l: '📄 Slip Absensi', path: '/dashboard/slips' },
-    { id: 'overtime', l: '🕐 Lembur', path: '/dashboard/overtime' },
-    { id: 'leaves', l: '🏖️ Cuti', path: '/dashboard/leaves' },
-    { id: 'reports', l: '📤 Laporan', path: '/dashboard/reports' },
+    { id: 'qr', l: '📱 QR Code', path: '/dashboard/qr', feature: TAB_FEATURE_MAP.qr },
+    { id: 'shifts', l: '🕐 Shift', path: '/dashboard/shifts', feature: TAB_FEATURE_MAP.shifts },
+    { id: 'locations', l: '📍 Lokasi', path: '/dashboard/locations', feature: TAB_FEATURE_MAP.locations },
+    { id: 'broadcast', l: '📢 Broadcast', path: '/dashboard/broadcast', feature: TAB_FEATURE_MAP.broadcast },
+    { id: 'notifications', l: '🔔 Notifikasi', path: '/dashboard/notifications', feature: TAB_FEATURE_MAP.notifications },
+    { id: 'slips', l: '📄 Slip Absensi', path: '/dashboard/slips', feature: TAB_FEATURE_MAP.slips },
+    { id: 'overtime', l: '🕐 Lembur', path: '/dashboard/overtime', feature: TAB_FEATURE_MAP.overtime },
+    { id: 'leaves', l: '🏖️ Cuti', path: '/dashboard/leaves', feature: TAB_FEATURE_MAP.leaves },
+    { id: 'reports', l: '📤 Laporan', path: '/dashboard/reports', feature: TAB_FEATURE_MAP.reports },
     { id: 'settings', l: '⚙️ Pengaturan', path: '/dashboard/settings' },
     { id: 'payment', l: '💰 Paket', path: '/dashboard/payment' },
   ];
+
+  const companyFeatures = user?.role === 'superadmin'
+    ? ['*']
+    : (
+      Array.isArray(user?.company_features)
+        ? user.company_features.map(normalizePlanFeatureKey).filter(Boolean)
+        : BASE_FEATURES
+    );
+
+  const visibleTabs = mainTabs.filter((tab) => {
+    if (!tab.feature) return true;
+    if (companyFeatures.includes('*')) return true;
+    return companyFeatures.includes(normalizePlanFeatureKey(tab.feature));
+  });
 
   return (
     <>
@@ -65,7 +93,7 @@ export default function DashboardHeader({ title, subtitle, showUser = true }) {
 
             {/* Desktop Tabs */}
             <div className="hidden lg:flex items-center gap-1">
-              {mainTabs.map(t => (
+              {visibleTabs.map(t => (
                 <Link
                   key={t.id}
                   href={t.path}
@@ -125,7 +153,7 @@ export default function DashboardHeader({ title, subtitle, showUser = true }) {
       {menuOpen && (
         <div className="lg:hidden bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 space-y-1">
-            {mainTabs.map(t => (
+            {visibleTabs.map(t => (
               <Link
                 key={t.id}
                 href={t.path}

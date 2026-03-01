@@ -1,4 +1,4 @@
-import './globals.css';
+import './globals.scss';
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://absenin.com';
 export const metadata = {
   metadataBase: new URL(siteUrl),

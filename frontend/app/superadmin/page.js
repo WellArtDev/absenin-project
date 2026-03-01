@@ -1,12 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import Link from '@tiptap/extension-link';
 import api from '@/lib/api';
 import { PLAN_FEATURE_OPTIONS, getFeatureLabel, normalizePlanFeatureKey } from '@/lib/planFeatures';
+import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://absenin.com';
 const toImageUrl = (url) => {
@@ -53,24 +50,6 @@ export default function SuperadminPage() {
     content_html: '',
     feature_image_url: '',
     status: 'draft'
-  });
-
-  const blogEditor = useEditor({
-    extensions: [
-      StarterKit.configure({ heading: { levels: [2, 3] } }),
-      Underline,
-      Link.configure({ openOnClick: false })
-    ],
-    content: '',
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class: 'min-h-[220px] p-4 text-sm focus:outline-none'
-      }
-    },
-    onUpdate: ({ editor }) => {
-      setBlogForm((prev) => ({ ...prev, content_html: editor.getHTML() }));
-    }
   });
 
   useEffect(() => {
@@ -226,16 +205,6 @@ export default function SuperadminPage() {
     setShowBlogForm(true);
   };
 
-  useEffect(() => {
-    if (!blogEditor) return;
-    if (!showBlogForm) return;
-
-    const nextContent = blogForm.content_html || '<p></p>';
-    if (blogEditor.getHTML() !== nextContent) {
-      blogEditor.commands.setContent(nextContent, { emitUpdate: false });
-    }
-  }, [blogEditor, showBlogForm, blogForm.content_html]);
-
   const handleBlogImageUpload = async (file) => {
     if (!file) return;
     try {
@@ -251,7 +220,7 @@ export default function SuperadminPage() {
 
   const saveBlogPost = async (e) => {
     e.preventDefault();
-    const contentHtml = blogEditor?.getHTML() || blogForm.content_html || '';
+    const contentHtml = blogForm.content_html || '';
     const plainText = contentHtml.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
     const payload = {
       ...blogForm,
@@ -600,78 +569,11 @@ export default function SuperadminPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Konten Artikel *</label>
-                  <div className="border rounded-xl overflow-hidden">
-                    <div className="flex flex-wrap gap-2 p-2 border-b bg-gray-50">
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleBold().run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('bold') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        B
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleItalic().run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('italic') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        I
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleUnderline().run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('underline') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        U
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleBulletList().run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('bulletList') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        • List
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleOrderedList().run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('orderedList') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        1. List
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleHeading({ level: 2 }).run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('heading', { level: 2 }) ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        H2
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => blogEditor?.chain().focus().toggleBlockquote().run()}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('blockquote') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        Quote
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const prevUrl = blogEditor?.getAttributes('link')?.href || '';
-                          const url = prompt('Masukkan URL:', prevUrl);
-                          if (url === null) return;
-                          if (!url) {
-                            blogEditor?.chain().focus().unsetLink().run();
-                            return;
-                          }
-                          blogEditor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-                        }}
-                        className={`px-2 py-1 text-xs rounded border ${blogEditor?.isActive('link') ? 'bg-wa-light border-wa-primary text-wa-dark' : 'bg-white'}`}
-                      >
-                        Link
-                      </button>
-                      <button type="button" onClick={() => blogEditor?.chain().focus().undo().run()} className="px-2 py-1 text-xs rounded bg-white border">Undo</button>
-                      <button type="button" onClick={() => blogEditor?.chain().focus().redo().run()} className="px-2 py-1 text-xs rounded bg-white border">Redo</button>
-                    </div>
-                    <EditorContent editor={blogEditor} />
-                  </div>
+                  <SimpleEditor
+                    embedded
+                    initialContent={blogForm.content_html || '<p></p>'}
+                    onContentChange={(content) => setBlogForm((prev) => ({ ...prev, content_html: content }))}
+                  />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">

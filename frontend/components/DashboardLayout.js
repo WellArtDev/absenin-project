@@ -3,6 +3,21 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/lib/api';
+import { normalizePlanFeatureKey } from '@/lib/planFeatures';
+
+const BASE_FEATURES = ['attendance', 'selfie', 'gps', 'dashboard', 'export_csv'];
+const MENU_FEATURE_MAP = {
+  qr: 'qr_attendance',
+  shifts: 'shift_management',
+  locations: 'office_locations',
+  broadcast: 'broadcast',
+  notifications: 'notifications',
+  payroll: 'payroll',
+  slips: 'attendance_slip',
+  overtime: 'overtime',
+  leaves: 'leave_management',
+  reports: 'export_csv'
+};
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
@@ -44,22 +59,38 @@ export default function DashboardLayout({ children }) {
     api.logout();
   };
 
+  const getCompanyFeatures = () => {
+    if (user?.role === 'superadmin') return ['*'];
+    const raw = Array.isArray(user?.company_features) ? user.company_features : BASE_FEATURES;
+    const normalized = raw.map(normalizePlanFeatureKey).filter(Boolean);
+    return normalized.length > 0 ? [...new Set(normalized)] : BASE_FEATURES;
+  };
+
+  const hasFeature = (featureKey) => {
+    if (!featureKey) return true;
+    const features = getCompanyFeatures();
+    if (features.includes('*')) return true;
+    return features.includes(normalizePlanFeatureKey(featureKey));
+  };
+
   const menuItems = [
     { id: 'overview', icon: '📊', label: 'Overview', path: '/dashboard' },
     { id: 'employees', icon: '👥', label: 'Karyawan', path: '/dashboard/employees' },
-    { id: 'qr', icon: '📱', label: 'QR Code', path: '/dashboard/qr' },
-    { id: 'shifts', icon: '🕐', label: 'Shift', path: '/dashboard/shifts' },
-    { id: 'locations', icon: '📍', label: 'Lokasi', path: '/dashboard/locations' },
-    { id: 'broadcast', icon: '📢', label: 'Broadcast', path: '/dashboard/broadcast' },
-    { id: 'notifications', icon: '🔔', label: 'Notifikasi', path: '/dashboard/notifications' },
-    { id: 'payroll', icon: '💰', label: 'Payroll', path: '/dashboard/payroll' },
-    { id: 'slips', icon: '📄', label: 'Slip Absensi', path: '/dashboard/slips' },
-    { id: 'overtime', icon: '⏰', label: 'Lembur', path: '/dashboard/overtime' },
-    { id: 'leaves', icon: '🏖️', label: 'Cuti', path: '/dashboard/leaves' },
-    { id: 'reports', icon: '📈', label: 'Laporan', path: '/dashboard/reports' },
+    { id: 'qr', icon: '📱', label: 'QR Code', path: '/dashboard/qr', feature: MENU_FEATURE_MAP.qr },
+    { id: 'shifts', icon: '🕐', label: 'Shift', path: '/dashboard/shifts', feature: MENU_FEATURE_MAP.shifts },
+    { id: 'locations', icon: '📍', label: 'Lokasi', path: '/dashboard/locations', feature: MENU_FEATURE_MAP.locations },
+    { id: 'broadcast', icon: '📢', label: 'Broadcast', path: '/dashboard/broadcast', feature: MENU_FEATURE_MAP.broadcast },
+    { id: 'notifications', icon: '🔔', label: 'Notifikasi', path: '/dashboard/notifications', feature: MENU_FEATURE_MAP.notifications },
+    { id: 'payroll', icon: '💰', label: 'Payroll', path: '/dashboard/payroll', feature: MENU_FEATURE_MAP.payroll },
+    { id: 'slips', icon: '📄', label: 'Slip Absensi', path: '/dashboard/slips', feature: MENU_FEATURE_MAP.slips },
+    { id: 'overtime', icon: '⏰', label: 'Lembur', path: '/dashboard/overtime', feature: MENU_FEATURE_MAP.overtime },
+    { id: 'leaves', icon: '🏖️', label: 'Cuti', path: '/dashboard/leaves', feature: MENU_FEATURE_MAP.leaves },
+    { id: 'reports', icon: '📈', label: 'Laporan', path: '/dashboard/reports', feature: MENU_FEATURE_MAP.reports },
     { id: 'settings', icon: '⚙️', label: 'Pengaturan', path: '/dashboard/settings' },
     { id: 'payment', icon: '💎', label: 'Paket', path: '/dashboard/payment' },
   ];
+
+  const visibleMenuItems = menuItems.filter((item) => hasFeature(item.feature));
 
   const isActive = (path) => {
     if (path === '/dashboard') {
@@ -67,6 +98,13 @@ export default function DashboardLayout({ children }) {
     }
     return pathname?.startsWith(path);
   };
+
+  useEffect(() => {
+    if (!pathname) return;
+    if (!visibleMenuItems.some((item) => pathname.startsWith(item.path))) {
+      router.replace('/dashboard');
+    }
+  }, [pathname, user]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -95,7 +133,7 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <nav className="space-y-1">
-            {menuItems.map((item) => (
+            {visibleMenuItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.path}
@@ -153,7 +191,7 @@ export default function DashboardLayout({ children }) {
                 <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Dashboard</Link>
                 <span className="text-gray-300 dark:text-gray-700">/</span>
                 <span className="font-medium text-gray-800 dark:text-white">
-                  {menuItems.find((m) => pathname?.startsWith(m.path))?.label || 'Overview'}
+                  {visibleMenuItems.find((m) => pathname?.startsWith(m.path))?.label || 'Overview'}
                 </span>
               </nav>
             </div>
