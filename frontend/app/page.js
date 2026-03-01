@@ -91,7 +91,7 @@ export default function LandingPage() {
             <div style={{width:34,height:34,borderRadius:10,background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(37,211,102,.25)',padding:'5px',border:'1px solid #d1fae5'}}>
               <img src="/logo-absenin.svg" alt="Absenin Logo" style={{width:'100%',height:'100%',objectFit:'contain'}} />
             </div>
-            <span style={{fontSize:20,fontWeight:900,color:'#0f172a',letterSpacing:'-0.5px'}}>Absenin</span>
+            <span style={{fontSize:20,fontWeight:900,color:'#075E54',letterSpacing:'-0.5px'}}>Absenin</span>
           </div>
           <div style={{display:'flex',gap:28,alignItems:'center'}}>
             <div style={{display:'flex',gap:24}} className="hidden md:flex">
@@ -109,8 +109,8 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section style={{paddingTop:100,paddingBottom:80,position:'relative',overflow:'hidden'}} className="grid-bg">
-        <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,rgba(240,249,255,.8) 0%,#fff 100%)',pointerEvents:'none'}}/>
-        <div style={{position:'absolute',top:-60,right:-60,width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,.12),transparent 70%)',pointerEvents:'none'}}/>
+        <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,rgba(236,253,245,.85) 0%,#fff 100%)',pointerEvents:'none'}}/>
+        <div style={{position:'absolute',top:-60,right:-60,width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(18,140,126,.12),transparent 70%)',pointerEvents:'none'}}/>
         <div style={{position:'absolute',top:120,left:-80,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle,rgba(37,211,102,.1),transparent 70%)',pointerEvents:'none'}}/>
 
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',position:'relative'}}>
@@ -118,15 +118,15 @@ export default function LandingPage() {
 
             {/* Copy */}
             <div className="fu">
-              <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'#f0f9ff',border:'1.5px solid #bae6fd',borderRadius:100,padding:'7px 18px',marginBottom:28}}>
+              <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'#ecfdf5',border:'1.5px solid #bbf7d0',borderRadius:100,padding:'7px 18px',marginBottom:28}}>
                 <span style={{width:8,height:8,borderRadius:'50%',background:'#25D366',display:'inline-block',animation:'pulse 2s infinite'}}/>
-                <span style={{fontSize:13,fontWeight:700,color:'#0369a1'}}>Multi-Tenant SaaS · WA Per-Perusahaan · </span>
+                <span style={{fontSize:13,fontWeight:700,color:'#128C7E'}}>Multi-Tenant SaaS · WA Per-Perusahaan · </span>
               </div>
-              <h1 style={{fontSize:'clamp(36px,4.5vw,64px)',fontWeight:900,color:'#0f172a',lineHeight:1.06,letterSpacing:'-1.5px',marginBottom:24}}>
+              <h1 style={{fontSize:'clamp(36px,4.5vw,64px)',fontWeight:900,color:'#075E54',lineHeight:1.06,letterSpacing:'-1.5px',marginBottom:24}}>
                 #1st Absensi Karyawan<br/><span className="gt">via WhatsApp,</span><br/>Tanpa Ribet.
               </h1>
               <p style={{fontSize:18,color:'#475569',lineHeight:1.7,marginBottom:32,maxWidth:480}}>
-                Karyawan kirim <strong style={{color:'#0f172a'}}>foto selfie + HADIR</strong> di WhatsApp. GPS tercatat, lembur otomatis, laporan siap. <strong style={{color:'#0f172a'}}>Tanpa install aplikasi apapun.</strong>
+                Karyawan kirim <strong style={{color:'#075E54'}}>foto selfie + HADIR</strong> di WhatsApp. GPS tercatat, lembur otomatis, laporan siap. <strong style={{color:'#075E54'}}>Tanpa install aplikasi apapun.</strong>
               </p>
               {/* social proof */}
               <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:36,flexWrap:'wrap'}}>
@@ -136,7 +136,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <div>
-                  <p style={{fontSize:13,fontWeight:800,color:'#0f172a',margin:0}}>500+ perusahaan aktif</p>
+                  <p style={{fontSize:13,fontWeight:800,color:'#075E54',margin:0}}>500+ perusahaan aktif</p>
                   <p style={{fontSize:12,color:'#94a3b8',margin:0}}>dari UMKM hingga 200+ karyawan</p>
                 </div>
                 <span style={{color:'#f59e0b',fontWeight:800,fontSize:13}}>★★★★★ <span style={{color:'#64748b',fontWeight:600}}>4.9/5</span></span>
@@ -218,16 +218,16 @@ export default function LandingPage() {
       </section> */}
 
 {/* ── MULTI-TENANT SECTION ── */}
-      <section style={{padding:'100px 0',background:'#0f172a',position:'relative',overflow:'hidden'}}>
+      <section style={{padding:'100px 0',background:'#052e2b',position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',inset:0,opacity:.15,backgroundImage:'radial-gradient(circle at 20% 60%,#25D366,transparent 50%),radial-gradient(circle at 80% 40%,#075E54,transparent 50%)'}}/>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px',position:'relative'}}>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:80,alignItems:'center'}}>
             <div>
               <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(37,211,102,.15)',border:'1px solid rgba(37,211,102,.3)',borderRadius:100,padding:'7px 18px',marginBottom:24}}>
-                <span style={{fontSize:13,fontWeight:700,color:'#7dd3fc'}}>🏢 Multi-Tenant Architecture</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#86efac'}}>🏢 Multi-Tenant Architecture</span>
               </div>
               <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#fff',lineHeight:1.1,marginBottom:24,letterSpacing:'-1px'}}>
-                Satu Platform,<br/><span style={{color:'#38bdf8'}}>Banyak Perusahaan.</span><br/>Data 100% Terpisah.
+                Satu Platform,<br/><span style={{color:'#25D366'}}>Banyak Perusahaan.</span><br/>Data 100% Terpisah.
               </h2>
               <p style={{fontSize:17,color:'#94a3b8',lineHeight:1.75,marginBottom:36}}>
                 Setiap perusahaan punya <strong style={{color:'#fff'}}>dashboard sendiri</strong>, <strong style={{color:'#fff'}}>nomor WhatsApp sendiri via Fonnte</strong>, dan <strong style={{color:'#fff'}}>data yang terisolasi penuh di level database</strong>. PT A tidak bisa mengakses data PT B — dijamin.
@@ -251,8 +251,8 @@ export default function LandingPage() {
               {[
                 {name:'PT Maju Bersama',wa:'0811-xxxx',emp:45,c:'linear-gradient(135deg,#25D366,#128C7E)'},
                 {name:'CV Kreasi Digital',wa:'0822-xxxx',emp:18,c:'linear-gradient(135deg,#075E54,#4f46e5)'},
-                {name:'UD Sinar Jaya',wa:'0833-xxxx',emp:12,c:'linear-gradient(135deg,#8b5cf6,#7c3aed)'},
-                {name:'PT Logistik Prima',wa:'0844-xxxx',emp:120,c:'linear-gradient(135deg,#06b6d4,#0891b2)'},
+                {name:'UD Sinar Jaya',wa:'0833-xxxx',emp:12,c:'linear-gradient(135deg,#34d399,#10b981)'},
+                {name:'PT Logistik Prima',wa:'0844-xxxx',emp:120,c:'linear-gradient(135deg,#22c55e,#16a34a)'},
               ].map((t,i)=>(
                 <div key={i} className="tenant-card">
                   <div style={{width:42,height:42,borderRadius:12,background:t.c,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:900,fontSize:16,marginBottom:14}}>{t.name[0]}</div>
@@ -274,7 +274,7 @@ export default function LandingPage() {
       <section id="fitur" style={{padding:'100px 0',background:'#f8fafc'}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px'}}>
           <div style={{textAlign:'center',marginBottom:64}}>
-            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#0f172a',marginBottom:16,letterSpacing:'-1px'}}>Semua yang Anda Butuhkan</h2>
+            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#075E54',marginBottom:16,letterSpacing:'-1px'}}>Semua yang Anda Butuhkan</h2>
             <p style={{fontSize:18,color:'#64748b',maxWidth:560,margin:'0 auto'}}>Dari absensi sederhana sampai HRM lengkap. Tidak perlu software terpisah.</p>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:24}}>
@@ -290,8 +290,8 @@ export default function LandingPage() {
               {i:'⚙️',t:'Konfigurasi Fleksibel',d:'Jam kerja, toleransi telat, lembur minimal, dan seluruh pengaturan WA bisa dikustomisasi bebas.'},
             ].map((f,i)=>(
               <div key={i} className="card" style={{padding:'28px 28px 28px'}}>
-                <div style={{width:54,height:54,borderRadius:16,background:'#f0f9ff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,marginBottom:20}}>{f.i}</div>
-                <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:8}}>{f.t}</h3>
+                <div style={{width:54,height:54,borderRadius:16,background:'#ecfdf5',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,marginBottom:20}}>{f.i}</div>
+                <h3 style={{fontSize:16,fontWeight:800,color:'#075E54',marginBottom:8}}>{f.t}</h3>
                 <p style={{fontSize:13.5,color:'#64748b',lineHeight:1.7,margin:0}}>{f.d}</p>
               </div>
             ))}
@@ -303,7 +303,7 @@ export default function LandingPage() {
       <section id="cara-kerja" style={{padding:'100px 0',background:'#fff'}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px'}}>
           <div style={{textAlign:'center',marginBottom:64}}>
-            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#0f172a',marginBottom:16,letterSpacing:'-1px'}}>Setup dalam 5 Menit</h2>
+            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#075E54',marginBottom:16,letterSpacing:'-1px'}}>Setup dalam 5 Menit</h2>
             <p style={{fontSize:18,color:'#64748b'}}>Tanpa koding. Tanpa instalasi server. Langsung jalan.</p>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:24,position:'relative'}}>
@@ -316,14 +316,14 @@ export default function LandingPage() {
             ].map((s,i)=>(
               <div key={i} style={{textAlign:'center',position:'relative',zIndex:1}}>
                 <div style={{width:64,height:64,borderRadius:18,background:'linear-gradient(135deg,#25D366,#075E54)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:900,fontSize:18,margin:'0 auto 20px',boxShadow:'0 8px 24px rgba(37,211,102,.35)'}}>{s.n}</div>
-                <h3 style={{fontSize:16,fontWeight:800,color:'#0f172a',marginBottom:8}}>{s.t}</h3>
+                <h3 style={{fontSize:16,fontWeight:800,color:'#075E54',marginBottom:8}}>{s.t}</h3>
                 <p style={{fontSize:13.5,color:'#64748b',lineHeight:1.6}}>{s.d}</p>
               </div>
             ))}
           </div>
 
           {/* WA Commands box */}
-          <div style={{marginTop:80,background:'#0f172a',borderRadius:28,padding:'48px'}}>
+          <div style={{marginTop:80,background:'#052e2b',borderRadius:28,padding:'48px'}}>
             <h3 style={{fontSize:26,fontWeight:900,color:'#fff',textAlign:'center',margin:'0 0 8px'}}>Perintah WhatsApp</h3>
             <p style={{color:'#64748b',textAlign:'center',marginBottom:40,fontSize:15}}>Karyawan kirim ke nomor WA perusahaan Anda</p>
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:20}}>
@@ -337,7 +337,7 @@ export default function LandingPage() {
                   <div style={{display:'flex',flexDirection:'column',gap:10}}>
                     {g.cmds.map(([cmd,desc],j)=>(
                       <div key={j} style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-                        <code style={{background:'rgba(37,211,102,.2)',color:'#7dd3fc',padding:'3px 10px',borderRadius:7,fontSize:11,fontFamily:'monospace',whiteSpace:'nowrap'}}>{cmd}</code>
+                        <code style={{background:'rgba(37,211,102,.2)',color:'#86efac',padding:'3px 10px',borderRadius:7,fontSize:11,fontFamily:'monospace',whiteSpace:'nowrap'}}>{cmd}</code>
                         <span style={{color:'#64748b',fontSize:12}}>{desc}</span>
                       </div>
                     ))}
@@ -349,10 +349,10 @@ export default function LandingPage() {
         </div>
       </section>
           {/* ── TESTIMONIALS ── */}
-      <section style={{padding:'100px 0',background:'#f0f9ff'}}>
+      <section style={{padding:'100px 0',background:'#ecfdf5'}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px'}}>
           <div style={{textAlign:'center',marginBottom:64}}>
-            <h2 style={{fontSize:'clamp(28px,3.5vw,44px)',fontWeight:900,color:'#0f172a',marginBottom:12,letterSpacing:'-1px'}}>Dipercaya 500+ Perusahaan</h2>
+            <h2 style={{fontSize:'clamp(28px,3.5vw,44px)',fontWeight:900,color:'#075E54',marginBottom:12,letterSpacing:'-1px'}}>Dipercaya 500+ Perusahaan</h2>
             <p style={{fontSize:17,color:'#64748b'}}>Dari UMKM hingga perusahaan 200+ karyawan</p>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:24}}>
@@ -361,16 +361,16 @@ export default function LandingPage() {
               {name:'Sari Dewi',role:'Owner, CV Kreasi Nusantara',text:'Setup cuma 10 menit. Connect ke WA kantor, tambah karyawan, selesai. Fitur lembur otomatisnya sangat membantu penghitungan gaji.',emp:'18 karyawan'},
               {name:'Rahmat Hidayat',role:'Direktur, PT Logistik Prima',text:'Multi-cabang bisa dihandle dari satu dashboard. Laporan CSV tiap bulan tinggal download, langsung dikirim ke accounting.',emp:'120 karyawan'},
             ].map((t,i)=>(
-              <div key={i} className="card" style={{padding:'32px',borderColor:'#bae6fd'}}>
+              <div key={i} className="card" style={{padding:'32px',borderColor:'#bbf7d0'}}>
                 <div style={{color:'#f59e0b',fontWeight:800,fontSize:15,marginBottom:16}}>★★★★★</div>
                 <p style={{fontSize:14,color:'#374151',lineHeight:1.75,marginBottom:24,fontStyle:'italic'}}>"{t.text}"</p>
                 <div style={{display:'flex',alignItems:'center',gap:12,paddingTop:16,borderTop:'1px solid #f1f5f9'}}>
-                  <div style={{width:40,height:40,borderRadius:'50%',background:'linear-gradient(135deg,#38bdf8,#818cf8)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,flexShrink:0}}>{t.name[0]}</div>
+                  <div style={{width:40,height:40,borderRadius:'50%',background:'linear-gradient(135deg,#25D366,#128C7E)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,flexShrink:0}}>{t.name[0]}</div>
                   <div style={{flex:1}}>
-                    <p style={{fontWeight:800,color:'#0f172a',fontSize:13,margin:0}}>{t.name}</p>
+                    <p style={{fontWeight:800,color:'#075E54',fontSize:13,margin:0}}>{t.name}</p>
                     <p style={{color:'#94a3b8',fontSize:12,margin:0}}>{t.role}</p>
                   </div>
-                  <span style={{background:'#e0f2fe',color:'#0369a1',fontSize:11,fontWeight:700,padding:'4px 12px',borderRadius:100}}>{t.emp}</span>
+                  <span style={{background:'#dcfce7',color:'#128C7E',fontSize:11,fontWeight:700,padding:'4px 12px',borderRadius:100}}>{t.emp}</span>
                 </div>
               </div>
             ))}
@@ -382,7 +382,7 @@ export default function LandingPage() {
       <section id="harga" style={{padding:'100px 0',background:'#fff'}}>
         <div style={{maxWidth:1280,margin:'0 auto',padding:'0 24px'}}>
           <div style={{textAlign:'center',marginBottom:64}}>
-            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#0f172a',marginBottom:16,letterSpacing:'-1px'}}>Harga Transparan</h2>
+            <h2 style={{fontSize:'clamp(28px,3.5vw,48px)',fontWeight:900,color:'#075E54',marginBottom:16,letterSpacing:'-1px'}}>Harga Transparan</h2>
             <p style={{fontSize:18,color:'#64748b'}}>Mulai gratis. Upgrade kapan saja. Tanpa biaya tersembunyi.</p>
           </div>
           {loading ? (
@@ -399,17 +399,17 @@ export default function LandingPage() {
                   <div key={p.id} style={{borderRadius:24,overflow:'hidden',border:highlight?'none':'1.5px solid #f1f5f9',boxShadow:highlight?'0 0 0 2.5px #25D366,0 20px 60px rgba(37,211,102,.2)':'0 2px 12px rgba(0,0,0,.04)',transform:highlight?'scale(1.03)':'none'}}>
                     {badge&&<div style={{background:'linear-gradient(135deg,#25D366,#075E54)',color:'#fff',textAlign:'center',padding:'12px',fontSize:12,fontWeight:900,letterSpacing:'0.5px'}}>{badge}</div>}
                     <div style={{background:'#fff',padding:'32px'}}>
-                      <h3 style={{fontSize:22,fontWeight:900,color:'#0f172a',marginBottom:8}}>{p.name}</h3>
+                      <h3 style={{fontSize:22,fontWeight:900,color:'#075E54',marginBottom:8}}>{p.name}</h3>
                       <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
                         <span style={{fontSize:13,color:'#94a3b8'}}>Rp</span>
-                        <span style={{fontSize:38,fontWeight:900,color:'#0f172a',lineHeight:1}}>{Number(p.price).toLocaleString('id-ID')}</span>
+                        <span style={{fontSize:38,fontWeight:900,color:'#075E54',lineHeight:1}}>{Number(p.price).toLocaleString('id-ID')}</span>
                         <span style={{fontSize:13,color:'#94a3b8'}}>{p.duration_days === 0 ? 'selamanya' : `/ ${p.duration_days} hari`}</span>
                       </div>
                       <p style={{fontSize:13,color:'#25D366',fontWeight:700,marginBottom:24}}>👥 {p.max_employees >= 999 ? 'Unlimited' : `${p.max_employees}`} karyawan</p>
                       <ul style={{listStyle:'none',padding:0,margin:'0 0 28px',display:'flex',flexDirection:'column',gap:10}}>
                         {features.map((f,j) => (
                           <li key={j} style={{display:'flex',alignItems:'center',gap:10,fontSize:13,color:'#374151'}}>
-                            <span style={{width:20,height:20,borderRadius:'50%',background:'#e0f2fe',color:'#0369a1',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>
+                            <span style={{width:20,height:20,borderRadius:'50%',background:'#dcfce7',color:'#128C7E',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>✓</span>
                             <span style={{textTransform:'capitalize'}}>{typeof f === 'string' ? f.replace(/_/g, ' ') : f}</span>
                           </li>
                         ))}
@@ -437,7 +437,7 @@ export default function LandingPage() {
       <section id="faq" style={{padding:'100px 0',background:'#f8fafc'}}>
         <div style={{maxWidth:800,margin:'0 auto',padding:'0 24px'}}>
           <div style={{textAlign:'center',marginBottom:64}}>
-            <h2 style={{fontSize:'clamp(28px,3.5vw,44px)',fontWeight:900,color:'#0f172a',marginBottom:12,letterSpacing:'-1px'}}>Pertanyaan yang Sering Ditanyakan</h2>
+            <h2 style={{fontSize:'clamp(28px,3.5vw,44px)',fontWeight:900,color:'#075E54',marginBottom:12,letterSpacing:'-1px'}}>Pertanyaan yang Sering Ditanyakan</h2>
             <p style={{fontSize:17,color:'#64748b'}}>Masih ada pertanyaan? Kami siap membantu.</p>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -450,7 +450,7 @@ export default function LandingPage() {
               {q:'Apakah selfie bisa dipalsukan atau diakali?',a:'Tidak mudah. Setiap selfie otomatis di-watermark dengan nama karyawan + timestamp dari server, bukan dari kamera. Sistem juga mencatat IP dan lokasi GPS saat pengiriman. Foto lama atau foto orang lain tidak bisa lolos verifikasi.'},
             ].map((f,i)=>(
               <details key={i} style={{background:'#fff',borderRadius:18,border:'1.5px solid #e2e8f0',overflow:'hidden'}}>
-                <summary style={{padding:'20px 24px',fontWeight:700,color:'#0f172a',fontSize:15,display:'flex',justifyContent:'space-between',alignItems:'center',userSelect:'none'}}>
+                <summary style={{padding:'20px 24px',fontWeight:700,color:'#075E54',fontSize:15,display:'flex',justifyContent:'space-between',alignItems:'center',userSelect:'none'}}>
                   <span>{f.q}</span>
                   <span className="faq-plus" style={{color:'#25D366',fontSize:24,fontWeight:300,transition:'transform .2s',flexShrink:0,marginLeft:16}}>+</span>
                 </summary>
@@ -545,3 +545,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
